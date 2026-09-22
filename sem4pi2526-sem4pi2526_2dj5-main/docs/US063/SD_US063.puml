@@ -1,0 +1,97 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US063 - Edit Customer's Collaborator (email & phone)
+
+actor "Backoffice Operator" as BO
+participant ":EditCollaboratorUI" as UI
+participant ":EditCollaboratorController" as CTRL
+participant ":AuthorizationService" as AUTH
+participant "collaboratorRepositoryFCO\n:CollaboratorRepositoryFCO" as FCO_REPO
+participant "collaboratorRepositoryATCC\n:CollaboratorRepositoryATCC" as ATCC_REPO
+participant "collaboratorFCO\n:CollaboratorFCO\nor collaboratorATCC\n:CollaboratorATCC" as COLLAB
+
+activate BO
+
+BO -> UI : opens edit collaborator
+activate UI
+
+UI --> BO : select customer type\n(Area or Company)
+BO -> UI : Air Control Area or Air Transport Company
+
+alt Air Control Area (FCO)
+    UI -> CTRL : getAirControlAreas()
+    activate CTRL
+    CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(BACKOFFICE_OPERATOR, ADMIN)
+    AUTH --> CTRL : ok
+    CTRL --> UI : areas
+    deactivate CTRL
+    UI --> BO : select area
+    BO -> UI : selected area
+
+    UI -> CTRL : activeCollaboratorsOfArea(area)
+    activate CTRL
+    CTRL -> FCO_REPO : findActiveByCustomerArea(area)
+    activate FCO_REPO
+    FCO_REPO --> CTRL : collaborators
+    deactivate FCO_REPO
+    CTRL --> UI : collaborators
+    deactivate CTRL
+
+else Air Transport Company (ATCC)
+    UI -> CTRL : getAirTransportCompanies()
+    activate CTRL
+    CTRL --> UI : companies
+    deactivate CTRL
+    UI --> BO : select company
+    BO -> UI : selected company
+
+    UI -> CTRL : activeCollaboratorsOfCompany(company)
+    activate CTRL
+    CTRL -> ATCC_REPO : findAll()
+    activate ATCC_REPO
+    ATCC_REPO --> CTRL : collaborators
+    deactivate ATCC_REPO
+    CTRL --> UI : collaborators
+    deactivate CTRL
+end
+
+UI --> BO : select collaborator;\nshows current email and phone
+BO -> UI : new email and new phone
+
+alt FCO collaborator
+    UI -> CTRL : updateEmailAndPhoneFCO(collaborator, email, phone)
+    activate CTRL
+    CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(BACKOFFICE_OPERATOR, ADMIN)
+    CTRL -> CTRL : CollaboratorEmail.valueOf(email)\nCollaboratorPhone.valueOf(phone)
+    CTRL -> FCO_REPO : findByEmail(newEmail) [if changed]
+    activate FCO_REPO
+    FCO_REPO --> CTRL : optional duplicate
+    deactivate FCO_REPO
+    CTRL -> COLLAB : changeEmailAndPhone(newEmail, newPhone)
+    activate COLLAB
+    deactivate COLLAB
+    CTRL -> FCO_REPO : save(collaborator)
+    activate FCO_REPO
+    FCO_REPO --> CTRL : updatedCollaborator
+    deactivate FCO_REPO
+else ATCC collaborator
+    UI -> CTRL : updateEmailAndPhoneATCC(collaborator, email, phone)
+    activate CTRL
+    CTRL -> ATCC_REPO : findByEmail(newEmail) [if changed]
+    CTRL -> COLLAB : changeEmailAndPhone(newEmail, newPhone)
+    CTRL -> ATCC_REPO : save(collaborator)
+    ATCC_REPO --> CTRL : updatedCollaborator
+    deactivate CTRL
+end
+
+CTRL --> UI : updatedCollaborator
+deactivate CTRL
+
+UI --> BO : success or validation error message
+deactivate UI
+
+deactivate BO
+
+@enduml

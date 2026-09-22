@@ -1,0 +1,132 @@
+@startuml
+
+skinparam monochrome true
+skinparam packageStyle rect
+skinparam defaultFontName "Verdana"
+skinparam shadowing false
+
+title Sequence Diagram - US050 (Register Air Control Area)
+
+participant ":Bootstrapper" as BS <<Bootstrapper>>
+participant ":AirControlAreaBootstrapper" as ACAB <<Bootstrapper>>
+participant ":RegisterAirControlAreaController" as CTRL <<Application>>
+participant "authz\n:AuthorizationService" as AS <<Service>>
+participant "acaBuilder\n:AirControlAreaBuilder" as ACABU <<Builder>>
+participant "Coordinate" as CD <<Domain>>
+participant "acaRepository\n:AirControlAreaRepository" as ACAR <<Repository>>
+participant "id\n:AirControlAreaID" as ACAID <<VO>>
+participant "boundaries\n:AirControlAreaBoundaries" as ACABD <<VO>>
+participant "minimumFuel\n:AirControlAreaMinimumFuel" as ACAMF <<VO>>
+participant "aca\n:AirControlArea" as ACA <<Aggregate Root>>
+
+autonumber
+
+BS -> ACAB : execute()
+activate BS
+activate ACAB
+ACAB -> ACAB: registerArea(name, minimumFuel, coords)
+activate ACAB
+loop This creation happens for both declared coordinates
+ACAB -> CTRL : createCoordinate(lat, lon)
+activate CTRL
+CTRL -> AS : ensureAuthenticatedUserHasAnyOf(Roles.BACKOFFICE_OPERATOR)
+activate AS
+AS --> CTRL : no exception thrown
+deactivate AS
+
+CTRL -> ACABU : createCoordinate(lat, lon)
+activate ACABU
+ACABU -> ACABU : checkCoordinates(lat, lon)
+activate ACABU
+ACABU --> ACABU : true
+deactivate ACABU
+ACABU -> CD** : new Coordinate(lat, lon)
+activate CD
+
+note left of ACABU : The resulting domain object is saved in the attribute\n"List<Coordinate> coordinates" of the Builder to\ncreate later the VO "AirControlAreaBoundaries".
+
+CD --> ACABU : coordinate
+deactivate CD
+deactivate ACABU
+end
+ACAB -> CTRL : registerAirControlArea(name, minimumFuel)
+CTRL -> AS : ensureAuthenticatedUserHasAnyOf(Roles.BACKOFFICE_OPERATOR)
+activate AS
+AS --> CTRL : no exception thrown
+deactivate AS
+CTRL -> ACAR : count()
+activate ACAR
+ACAR --> CTRL : number of ACAs
+deactivate ACAR
+
+CTRL -> ACABU : with(nextSeq, name, minimumFuel)
+activate ACABU
+ACABU -> ACABU : withID(nextSeq)
+activate ACABU
+ACABU -> ACAID** : new AirControlAreaID(nextSeq)
+activate ACAID
+ACAID --> ACABU : id
+deactivate ACAID
+ACABU --> ACABU : acaBuilder
+deactivate ACABU
+ACABU -> ACABU : withName(name)
+activate ACABU
+ACABU --> ACABU : acaBuilder
+deactivate ACABU
+ACABU -> ACABU : withBoundaries(coordinates)
+activate ACABU
+ACABU -> ACABU : buildRectangle(coordinates)
+activate ACABU
+note right of ACABU : This method recreates the already existent\ncoordinates in the Builder and also creates\nthe two others in order to form the rectangle.
+ACABU --> ACABU : coordinates
+deactivate ACABU
+
+ACABU -> ACABD**: new AirControlAreaBoundaries(coordinates)
+activate ACABD
+ACABD --> ACABU : boundaries
+deactivate ACABD
+ACABU --> ACABU : acaBuilder
+deactivate ACABU
+ACABU -> ACABU : withMinimumFuel(minimumFuel)
+activate ACABU
+ACABU -> ACAMF** : new AirControlAreaMinimumFuel(minimumFuel)
+activate ACAMF
+ACAMF --> ACABU : minimumFuel
+deactivate ACAMF
+ACABU --> ACABU : acaBuilder
+deactivate ACABU
+ACABU --> CTRL : acaBuilder
+deactivate ACABU
+
+CTRL -> ACABU : build()
+activate ACABU
+ACABU -> ACA** : new AirControlArea(id, name, boundaries, minimumFuel)
+activate ACA
+ACA --> ACABU : newArea
+deactivate ACA
+ACABU --> CTRL : newArea
+deactivate ACABU
+CTRL -> ACAR : findAll()
+activate ACAR
+ACAR --> CTRL : allAreas
+deactivate ACAR
+
+loop This verification is made over all the existing areas in the repository
+CTRL -> ACA : newArea.overlaps(existing)
+activate ACA
+ACA --> CTRL : no exception thrown
+deactivate ACA
+end
+
+CTRL -> ACAR : save(newArea)
+activate ACAR
+ACAR --> CTRL : newArea
+deactivate ACAR
+CTRL --> ACAB : newArea
+deactivate CTRL
+ACAB --> ACAB : newArea
+deactivate ACAB
+ACAB --> BS : newArea
+deactivate ACAB
+
+@enduml

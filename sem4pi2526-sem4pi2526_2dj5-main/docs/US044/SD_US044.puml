@@ -1,0 +1,152 @@
+@startuml
+
+skinparam monochrome true
+skinparam packageStyle rect
+skinparam defaultFontName "Verdana"
+skinparam shadowing false
+
+title Sequence Diagram - US044 (Weather Person remote access)
+
+actor "Weather\nPerson" as WP
+participant "ClientApp" as CLIENT
+participant "RemoteServer" as SERVER
+participant "LoggingServer" as LOG
+database "Database" as DB
+
+autonumber
+
+== Authentication ==
+
+activate WP
+WP -> CLIENT : starts client application
+activate CLIENT
+
+CLIENT -> CLIENT : shows main menu
+
+WP -> CLIENT : selects "Authentication"
+CLIENT -> CLIENT : creates TCPClient\nand connects to server
+CLIENT -> SERVER : Packet(opCode=1, len=N, "username;password")
+activate SERVER
+
+SERVER -> SERVER : dispatches to\nAuthenticationRequestHandler
+SERVER -> DB : validates credentials
+activate DB
+DB --> SERVER : success
+deactivate DB
+
+SERVER -> LOG : UDP datagram (AUTH LOG)
+activate LOG
+LOG --> SERVER : (datagram sent)
+deactivate LOG
+
+SERVER --> CLIENT : Packet(opCode=10, len=N, "Login successful")
+deactivate SERVER
+
+CLIENT -> CLIENT : stores authenticated session
+
+== Import Bulk Weather Data ==
+
+WP -> CLIENT : selects "Import Bulk Weather Data"
+CLIENT --> WP : asks for file path
+WP -> CLIENT : provides file path
+
+CLIENT -> CLIENT : reads file content locally
+CLIENT -> SERVER : Packet(opCode=4, len=N, "data.csv\n<file_content>")
+activate SERVER
+
+SERVER -> SERVER : writes temp file
+SERVER -> SERVER : dispatches to\nImportBulkWeatherDataRequestHandler
+
+SERVER -> DB : queries areas, saves data
+activate DB
+DB --> SERVER : results
+deactivate DB
+
+SERVER -> SERVER : deletes temp file
+SERVER --> CLIENT : Packet(opCode=10, len=N, "3 imported, 0 errors")
+deactivate SERVER
+
+CLIENT --> WP : shows import summary
+
+== Register Weather Data ==
+
+WP -> CLIENT : selects "Register Weather Data"
+
+CLIENT -> SERVER : Packet(opCode=6, len=0)
+activate SERVER
+
+SERVER -> SERVER : dispatches to\nListAirControlAreasRequestHandler
+SERVER -> DB : findAll()
+activate DB
+DB --> SERVER : [ACA-0001, ACA-0002, ...]
+deactivate DB
+
+SERVER --> CLIENT : Packet(opCode=10, len=N, "ACA-0001|Area1|ACA-0002|Area2|...")
+deactivate SERVER
+
+CLIENT --> WP : shows list of areas to select
+WP -> CLIENT : selects area, enters\ndate, windDir, windSpeed
+
+CLIENT -> SERVER : Packet(opCode=5, len=N, "ACA-0001;2026-06-01;180;12.5")
+activate SERVER
+
+SERVER -> SERVER : dispatches to\nRegisterWeatherDataRequestHandler
+SERVER -> DB : saves WeatherData
+activate DB
+DB --> SERVER : ok
+deactivate DB
+
+SERVER --> CLIENT : Packet(opCode=10, len=N, "Weather data registered successfully")
+deactivate SERVER
+
+CLIENT --> WP : shows success message
+
+== Consult Weather Data ==
+
+WP -> CLIENT : selects "Consult Weather Data"
+
+CLIENT -> SERVER : Packet(opCode=6, len=0)
+activate SERVER
+
+SERVER -> SERVER : dispatches to\nListAirControlAreasRequestHandler
+SERVER -> DB : findAll()
+activate DB
+DB --> SERVER : [ACA-0001, ACA-0002, ...]
+deactivate DB
+
+SERVER --> CLIENT : Packet(opCode=10, len=N, "ACA-0001|Area1|ACA-0002|Area2|...")
+deactivate SERVER
+
+CLIENT --> WP : shows list of areas
+WP -> CLIENT : selects area, enters\nstartDate, endDate
+
+CLIENT -> SERVER : Packet(opCode=7, len=N, "ACA-0001;2026-01-01;2026-06-01")
+activate SERVER
+
+SERVER -> SERVER : dispatches to\nConsultWeatherDataRequestHandler
+SERVER -> DB : findByAreaAndDateBetween()
+activate DB
+DB --> SERVER : [WeatherData, ...]
+deactivate DB
+
+SERVER --> CLIENT : Packet(opCode=10, len=N, "Date: 2026-01-01 | ...\nDate: 2026-01-02 | ...")
+deactivate SERVER
+
+CLIENT --> WP : shows weather data records
+
+== Disconnection ==
+
+WP -> CLIENT : selects "Logout"
+CLIENT -> SERVER : Packet(opCode=0, len=0)
+activate SERVER
+SERVER --> CLIENT : Packet(opCode=10, len=N, "Disconnected")
+deactivate SERVER
+
+CLIENT -> CLIENT : disconnects socket
+
+WP -> CLIENT : selects "Exit"
+CLIENT -> CLIENT : closes application
+deactivate CLIENT
+deactivate WP
+
+@enduml

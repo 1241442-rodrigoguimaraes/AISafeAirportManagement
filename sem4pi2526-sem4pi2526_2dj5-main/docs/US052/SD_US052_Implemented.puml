@@ -1,0 +1,87 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US052 - Register an Airport (Implemented)
+
+actor "Backoffice\nOperator" as BO
+participant ":RegisterAirportUI" as UI
+participant ":RegisterAirportController" as CTRL
+participant ":AuthorizationService" as AUTH
+participant "airControlAreaRepository\n:AirControlAreaRepository" as ACAR
+participant ":NodeService" as NS
+participant "nodeRepository\n:NodeRepository" as NR
+participant ":AirportBuilder" as BUILDER
+participant "airportRepository\n:AirportRepository" as AR
+
+activate BO
+
+BO -> UI : requests to register a new airport
+activate UI
+
+UI -> CTRL : getAirControlAreas()
+activate CTRL
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(BACKOFFICE_OPERATOR)
+activate AUTH
+AUTH --> CTRL : ok
+deactivate AUTH
+CTRL -> ACAR : findAll()
+activate ACAR
+ACAR --> CTRL : airControlAreas
+deactivate ACAR
+CTRL --> UI : airControlAreas
+deactivate CTRL
+UI --> BO : shows available air control areas
+
+BO -> UI : selects an air control area
+UI --> BO : asks for airport details\n(name, IATA, ICAO, latitude,\nlongitude, altitude)
+BO -> UI : enters airport details
+
+UI -> CTRL : registerAirport(icaoCode, iataCode,\nairportName, latitude,\nlongitude, altitude, areaId)
+activate CTRL
+
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(BACKOFFICE_OPERATOR)
+activate AUTH
+AUTH --> CTRL : ok
+deactivate AUTH
+
+CTRL -> ACAR : findById(airControlAreaId)
+activate ACAR
+ACAR --> CTRL : airControlArea
+deactivate ACAR
+
+CTRL -> NS : createNode(latitude, longitude, altitudeMeters)
+activate NS
+NS -> NR : save(node)
+activate NR
+NR --> NS : node
+deactivate NR
+NS --> CTRL : location
+deactivate NS
+
+CTRL -> BUILDER ** : new AirportBuilder()
+activate BUILDER
+
+BUILDER -> BUILDER : with(icaoCode, iataCode,\nairportName, location,\nairControlArea)
+
+BUILDER --> CTRL : builder
+CTRL -> BUILDER : build()
+BUILDER -> AR ** : new Airport(...)
+note right : validated by Airport constructor
+BUILDER --> CTRL : airport
+deactivate BUILDER
+
+CTRL -> AR : save(airport)
+activate AR
+AR --> CTRL : airport
+deactivate AR
+
+CTRL --> UI : airport
+deactivate CTRL
+
+UI --> BO : shows airport registration details
+deactivate UI
+
+deactivate BO
+
+@enduml

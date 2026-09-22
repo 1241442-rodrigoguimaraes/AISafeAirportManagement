@@ -1,0 +1,56 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US033 - List Backoffice Users
+
+actor "Backoffice Operator\nor Administrator" as BO
+participant ":ListUsersUI" as UI
+participant ":AuthorizationService" as AUTH
+participant ":ListUsersController" as CTRL
+participant "alSafeUserRepository\n:AlSafeUserRepository" as REPO
+participant "alSafeUser\n:AlSafeUser" as AU
+participant "systemUser\n:SystemUser" as SU
+
+activate BO
+
+BO -> UI : requests user list
+activate UI
+
+UI -> AUTH : ensureAuthenticatedUserHasAnyOf(BACKOFFICE_OPERATOR, ADMIN)
+activate AUTH
+AUTH --> UI : ok
+deactivate AUTH
+
+UI -> CTRL : getUsers()
+activate CTRL
+
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(BACKOFFICE_OPERATOR, ADMIN)
+AUTH --> CTRL : ok
+
+CTRL -> REPO : findAll()
+activate REPO
+REPO --> CTRL : alSafeUsers
+deactivate REPO
+
+loop for each AlSafeUser
+    CTRL -> AU : user(), getPhoneNumber(),\ngetSecurityClearance(), getSkillsAssessment()
+    activate AU
+    AU --> CTRL : profile data
+    deactivate AU
+    CTRL -> SU : email(), name(), roleTypes(), isActive()
+    activate SU
+    SU --> CTRL : identity, role, status
+    deactivate SU
+    CTRL -> CTRL : toDto(...) -> UserDTO
+end
+
+CTRL --> UI : List<UserDTO>
+deactivate CTRL
+
+UI --> BO : table (email, name, phone, role,\nstatus, clearance exp., skills date)
+deactivate UI
+
+deactivate BO
+
+@enduml

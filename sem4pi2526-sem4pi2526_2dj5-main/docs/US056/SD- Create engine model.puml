@@ -1,0 +1,61 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - Create Aircraft Engine Model
+
+actor "Backoffice\nOperator" as BO
+participant ":CreateEngineModelUI" as UI
+participant ":CreateEngineModelController" as CTRL
+participant "makerRepository\n:MakerRepository" as MKR
+participant "engineModelRepository\n:EngineModelRepository" as EMR
+participant "engineModel\n:engineModel" as EM
+
+activate BO
+
+BO -> UI : requests creation of engine model
+activate UI
+
+UI -> CTRL : makers()
+activate CTRL
+
+CTRL -> MKR : findAll()
+activate MKR
+MKR --> CTRL : makers
+deactivate MKR
+
+CTRL --> UI : makers
+deactivate CTRL
+
+UI --> BO : requests engine model data
+BO -> UI : enters data
+
+UI -> CTRL : registerEngineModel(...)
+
+activate CTRL
+
+CTRL -> EMR : ofIdentity(engineModelId)
+activate EMR
+
+EMR --> CTRL : not found
+
+deactivate EMR
+
+CTRL -> EM ++ : new(...)
+EM --> CTRL : engineModel
+
+CTRL -> EMR : save(engineModel)
+
+activate EMR
+EMR --> CTRL : savedEngineModel
+deactivate EMR
+
+CTRL --> UI : success
+
+deactivate CTRL
+
+UI --> BO : shows success message
+
+deactivate UI
+
+@enduml

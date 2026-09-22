@@ -1,0 +1,59 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US062 - List Customer's Collaborators
+
+actor "Backoffice\nOperator" as BO
+participant ":ListCollaboratorsUI" as UI
+participant ":ListCollaboratorsController" as CTRL
+participant "airCompanyRepository\n:AirCompanyRepository" as ACR
+participant "airControlAreaRepository\n:AirControlAreaRepository" as ACAR
+participant "collaboratorRepositoryATCC\n:CollaboratorRepositoryATCC" as ATCCR
+participant "collaboratorRepositoryFCO\n:CollaboratorRepositoryFCO" as FCOR
+
+activate BO
+
+BO -> UI : requests to list collaborators of a customer
+activate UI
+
+UI -> CTRL : getAirTransportCompanies() / getAirControlAreas()
+activate CTRL
+CTRL -> ACR : findAll()
+activate ACR
+ACR --> CTRL : companies
+deactivate ACR
+CTRL -> ACAR : findAll()
+activate ACAR
+ACAR --> CTRL : areas
+deactivate ACAR
+CTRL --> UI : customers (companies + areas)
+deactivate CTRL
+
+UI --> BO : shows customer type and customer list
+BO -> UI : selects customer type and customer
+
+alt Air Transport Company
+    UI -> CTRL : listActiveCollaboratorsOfCompany(company)
+    activate CTRL
+    CTRL -> ATCCR : findActiveByCompany(company)
+    activate ATCCR
+    ATCCR --> CTRL : active ATCC collaborators
+    deactivate ATCCR
+    CTRL --> UI : collaborators
+    deactivate CTRL
+else Air Control Area
+    UI -> CTRL : listActiveCollaboratorsOfArea(area)
+    activate CTRL
+    CTRL -> FCOR : findActiveByCustomerArea(area)
+    activate FCOR
+    FCOR --> CTRL : active FCO collaborators (DTO)
+    deactivate FCOR
+    CTRL --> UI : collaborators
+    deactivate CTRL
+end
+
+UI --> BO : shows list of active collaborators\n(name, email, phone, role)
+deactivate UI
+
+@enduml

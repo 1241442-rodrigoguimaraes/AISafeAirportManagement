@@ -1,0 +1,107 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US077 - Remove a Pilot
+
+actor "Air Transport\nCompany Collaborator" as ATCC
+participant ":RemovePilotUI" as UI
+participant ":RemovePilotController" as CTRL
+participant ":AuthorizationService" as AUTH
+participant "collaboratorRepositoryATCC\n:CollaboratorRepositoryATCC" as CR
+participant "pilotRepository\n:PilotRepository" as PR
+participant "flightPlanRepository\n:FlightPlanRepository" as FPR
+participant ":UserManagementService" as UMS
+
+activate ATCC
+
+ATCC -> UI : open Remove Pilot\n(CollaboratorsMainMenu option 8)
+activate UI
+
+== List active pilots ==
+
+UI -> CTRL : activePilotsForCurrentCompany()
+activate CTRL
+
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(ATCC)
+activate AUTH
+AUTH --> CTRL : ok
+deactivate AUTH
+
+CTRL -> CR : findBySystemUser(authenticatedUser)
+activate CR
+CR --> CTRL : collaboratorATCC
+deactivate CR
+
+CTRL -> CR : findCompanyByCollaborator(collaboratorATCC)
+activate CR
+CR --> CTRL : airTransportCompany
+deactivate CR
+
+CTRL -> PR : findActiveByCompany(company)
+activate PR
+PR --> CTRL : activePilots
+deactivate PR
+
+CTRL --> UI : activePilots
+deactivate CTRL
+
+alt no active pilots
+    UI --> ATCC : message: no pilots to deactivate
+else active pilots exist
+    UI --> ATCC : SelectWidget — choose pilot
+    ATCC -> UI : selects pilot
+
+    UI --> ATCC : ask Confirm deactivation? (Y/N)
+    ATCC -> UI : confirms Y
+
+    == Deactivate selected pilot ==
+
+    UI -> CTRL : deactivatePilot(pilotId)
+    activate CTRL
+
+    CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(ATCC)
+    activate AUTH
+    AUTH --> CTRL : ok
+    deactivate AUTH
+
+    CTRL -> CR : resolve authenticated collaborator company
+    activate CR
+    CR --> CTRL : company
+    deactivate CR
+
+    CTRL -> PR : ofIdentity(pilotId)
+    activate PR
+    PR --> CTRL : pilot
+    deactivate PR
+
+    CTRL -> CTRL : verify pilot.company == companye
+
+    CTRL -> CTRL : verify pilot.isActive()
+
+    CTRL -> FPR : findAssignedFlightPlansByPilot(pilot)
+    activate FPR
+    FPR --> CTRL : assignedPlans
+    deactivate FPR
+
+    alt assigned flight plans exist
+        CTRL --> UI : IllegalStateException
+        UI --> ATCC : error message
+    else no assigned flight plans
+        CTRL -> UMS : deactivateUser(pilot.user())
+        activate UMS
+        UMS --> CTRL : ok
+        deactivate UMS
+
+        CTRL --> UI : deactivated pilot
+        UI --> ATCC : success message
+    end
+
+    deactivate CTRL
+end
+
+deactivate UI
+
+deactivate ATCC
+
+@enduml

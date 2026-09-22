@@ -1,0 +1,110 @@
+@startuml
+
+skinparam monochrome true
+skinparam packageStyle rect
+skinparam defaultFontName "Verdana"
+skinparam shadowing false
+
+title Sequence Diagram - US060 (Register Air Transport Company)
+
+actor "Backoffice\nOperator" as BOP
+participant ":RegisterAirCompanyUI" as UI <<Presentation>>
+participant ":RegisterAirCompanyController" as CTRL <<Application>>
+participant "acaRepository\n:AirCompanyRepository" as ACR <<Repository>>
+participant "authz\n:AuthorizationService" as AS <<Service>>
+participant "atcBuilder\n:AirCompanyBuilder" as ACB <<Builder>>
+participant "iata\n:IATACompanyCode" as IATA <<VO>>
+participant "icao\n:ICAOCompanyCode" as ICAO <<VO>>
+participant "atc\n:AirTransportCompany" as ATC <<Aggregate Root>>
+
+autonumber
+
+activate BOP
+
+BOP -> UI : requests to create an air transport company
+activate UI
+UI --> BOP : asks for the IATA code
+BOP -> UI : types an IATA code
+UI -> CTRL : checkIATA(iata)
+activate CTRL
+CTRL -> ACR : findByIATA(iata)
+activate ACR
+ACR --> CTRL : empty Optional object
+deactivate ACR
+CTRL --> UI : no exception thrown
+deactivate CTRL
+
+UI --> BOP : asks for the ICAO code
+BOP -> UI : types an ICAO code
+UI -> CTRL : checkICAO(icao)
+activate CTRL
+CTRL -> ACR : findByICAO(icao)
+activate ACR
+ACR --> CTRL : empty Optional object
+deactivate ACR
+CTRL --> UI : no exception thrown
+deactivate CTRL
+
+UI --> BOP : asks for the company name
+BOP -> UI : types the company name
+UI -> CTRL : checkName(name)
+activate CTRL
+CTRL -> ACR : findByName(name)
+activate ACR
+ACR --> CTRL : empty Optional object
+deactivate ACR
+CTRL --> UI : no exception thrown
+deactivate CTRL
+
+UI -> CTRL : createAirTransportCompany(iata, icao, name)
+activate CTRL
+CTRL -> AS : ensureAuthenticatedUserHasAnyOf(Roles.BACKOFFICE_OPERATOR)
+activate AS
+AS --> CTRL : no exception thrown
+deactivate AS
+
+CTRL -> ACB : with(iata, icao, name)
+activate ACB
+ACB -> ACB : withName(name)
+activate ACB
+ACB --> ACB : atcBuilder
+deactivate ACB
+
+ACB -> ACB : withIATA(iata)
+activate ACB
+ACB -> IATA** : new IATA(iata)
+activate IATA
+IATA --> ACB : iata
+deactivate IATA
+ACB --> ACB : atcBuilder
+deactivate ACB
+
+ACB -> ACB : withICAO(icao)
+activate ACB
+ACB -> ICAO** : new ICAO(icao)
+activate ICAO
+ICAO --> ACB : icao
+deactivate ICAO
+ACB --> ACB : atcBuilder
+deactivate ACB
+ACB --> CTRL : atcBuilder
+deactivate ACB
+
+CTRL -> ACB : build()
+activate ACB
+ACB -> ATC** : new AirTransportCompany(name, iata, icao)
+activate ATC
+ATC --> ACB : airTransportCompany
+deactivate ATC
+ACB --> CTRL : airTransportCompany
+deactivate ACB
+
+CTRL -> ACR : save(airTransportCompany)
+activate ACR
+ACR --> CTRL : airTransportCompany
+deactivate ACR
+CTRL --> UI : airTransportCompany
+deactivate CTRL
+UI --> BOP : displays a success message and\nshow the data of the company created
+
+@enduml

@@ -1,0 +1,85 @@
+@startuml
+
+skinparam monochrome true
+skinparam packageStyle rect
+skinparam defaultFontName "Verdana"
+skinparam shadowing false
+
+title Sequence Diagram - US074 (Delete a Flight Route)
+
+actor "Air Transport\nCompany Collaborator" as ATCC
+participant ":DeleteFlightRouteUI" as UI <<Presentation>>
+participant ":DeleteFlightRouteController" as CTRL <<Application>>
+participant "authz\n:AuthorizationService" as AS <<Service>>
+participant "atccRepository\n:CollaboratorRepositoryATCC" as CAR <<Repository>>
+participant "atcc\n:CollaboratorATCC" as COL <<Entity>>
+participant "flightRouteRepository\n:FlightRouteRepository" as FRR <<Repository>>
+participant "flightPlanRepository\n:FlightPlanRepository" as FPR <<Repository>>
+
+autonumber
+
+activate ATCC
+
+ATCC -> UI : requests to delete a flight route
+activate UI
+
+UI --> ATCC : asks for the date (DD/MM/YYYY)
+ATCC -> UI : enters date
+
+UI -> CTRL : getCompanyRoutes(date)
+activate CTRL
+CTRL -> AS : ensureAuthenticatedUserHasAnyOf(Roles.AIR_TRANSPORT_COMPANY_COLLABORATOR)
+activate AS
+AS --> CTRL : no exception thrown
+deactivate AS
+CTRL -> AS : session().authenticatedUser()
+activate AS
+AS --> CTRL : user
+deactivate AS
+CTRL -> CAR : findBySystemUser(user)
+activate CAR
+CAR --> CTRL : atcc
+deactivate CAR
+CTRL -> COL : getAtcc()
+activate COL
+COL --> CTRL : company
+deactivate COL
+CTRL -> FRR : findByCompany(company)
+activate FRR
+FRR --> CTRL : allCompanyRoutes
+deactivate FRR
+
+loop for each route in allCompanyRoutes
+    CTRL -> FPR : findByFlightRouteAndAfterDate(route, date)
+    activate FPR
+    FPR --> CTRL : flightPlans
+    deactivate FPR
+end
+
+CTRL --> UI : routeNames (routes with no future flight plans)
+deactivate CTRL
+
+UI --> ATCC : shows list of deletable flight routes and asks to choose one
+ATCC -> UI : selects a flight route
+
+UI -> CTRL : deleteFlightRoute(routeName)
+activate CTRL
+CTRL -> AS : ensureAuthenticatedUserHasAnyOf(Roles.AIR_TRANSPORT_COMPANY_COLLABORATOR)
+activate AS
+AS --> CTRL : no exception thrown
+deactivate AS
+CTRL -> FRR : findByName(routeName)
+activate FRR
+FRR --> CTRL : flightRoute
+deactivate FRR
+CTRL -> FRR : delete(flightRoute)
+activate FRR
+FRR --> CTRL : ok
+deactivate FRR
+CTRL --> UI : success
+deactivate CTRL
+
+UI --> ATCC : displays a success message
+deactivate UI
+
+@enduml

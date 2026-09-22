@@ -1,0 +1,76 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US043 - Consult Weather Data
+
+actor "Weather Person /\nPilot /\nFCO" as USER
+participant ":ConsultWeatherDataUI" as UI
+participant ":ConsultWeatherDataController" as CTRL
+participant ":AuthorizationService" as AUTH
+participant "airControlAreaRepository\n:AirControlAreaRepository" as ACAR
+participant "weatherDataRepository\n:WeatherDataRepository" as WDR
+
+activate USER
+
+USER -> UI : requests to consult weather data
+activate UI
+
+UI -> CTRL : getAirControlAreas()
+activate CTRL
+
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(\nWEATHER_PERSON, PILOT, FCO)
+activate AUTH
+AUTH --> CTRL : ok
+deactivate AUTH
+
+CTRL -> ACAR : findAll()
+activate ACAR
+ACAR --> CTRL : airControlAreas
+deactivate ACAR
+
+CTRL --> UI : airControlAreas
+deactivate CTRL
+
+UI --> USER : shows available air control areas
+
+USER -> UI : selects an air control area
+
+UI --> USER : asks for date range\n(start date, end date)
+
+USER -> UI : enters start date and end date
+
+UI -> CTRL : consultWeatherData(area, startDate, endDate)
+activate CTRL
+
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(\nWEATHER_PERSON, PILOT, FCO)
+activate AUTH
+AUTH --> CTRL : ok
+deactivate AUTH
+
+CTRL -> WDR : findByAirControlAreaAndDateBetween(\narea, startDate, endDate)
+activate WDR
+
+WDR -> WDR : JPQL: e.airControlArea = :area\nAND e.weatherDate.date\nBETWEEN :start AND :end
+
+WDR --> CTRL : weatherDataList
+deactivate WDR
+
+alt list is not empty
+
+    CTRL --> UI : weatherDataList
+
+    UI --> USER : shows weather data entries\n(area, date, wind direction, wind speed)
+
+else list is empty
+
+    CTRL --> UI : empty list
+
+    UI --> USER : shows "No weather data found\nfor the selected criteria"
+
+end
+
+deactivate CTRL
+deactivate UI
+
+@enduml

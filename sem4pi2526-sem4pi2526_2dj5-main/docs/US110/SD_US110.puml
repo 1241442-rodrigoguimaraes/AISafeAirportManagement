@@ -1,0 +1,41 @@
+@startuml
+title US110 - Weather Thread and Shared Memory Update
+
+participant "Parent Process" as Parent
+participant "Weather Thread" as Env
+participant "Step Engine Thread" as Step
+participant "SharedSimulationArea" as Shm
+participant "Flight Child Process" as Child
+participant "Safety Monitor Thread" as Monitor
+
+Parent -> Env: pthread_create(weather_worker, ctx)
+Parent -> Step: pthread_create(step_engine_worker, ctx)
+
+loop each simulation time step
+    Step -> Step: read global_step
+    Env -> Env: load wind speed/direction
+    Env -> Shm: sem_wait(sem_mem)
+    Env -> Shm: write WeatherStats for current step
+    Env -> Shm: sem_post(sem_mem)
+
+    Step -> Shm: sem_wait(sem_mem)
+    Step -> Shm: confirm weather.time_step == global_step
+    Step -> Shm: reset updated_in_step flags
+    Step -> Shm: sem_post(sem_mem)
+
+    Step -> Child: write StepCommand through pipe
+    Child -> Shm: sem_wait(sem_mem)
+    Child -> Shm: read weather data
+    Child -> Shm: write wind-adjusted position
+    Child -> Shm: set updated_in_step = 1
+    Child -> Shm: sem_post(sem_mem)
+
+    Monitor -> Shm: sem_wait(sem_mem)
+    Monitor -> Shm: read updated positions
+    Monitor -> Shm: sem_post(sem_mem)
+    Monitor -> Monitor: detect safety violations
+end
+
+Parent -> Env: join during shutdown
+
+@enduml

@@ -1,0 +1,44 @@
+@startuml
+
+hide circle
+hide methods
+allowmixing
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize zero
+skinparam padding 3
+skinparam nodesep 85
+skinparam ranksep 110
+skinparam backgroundColor white
+skinparam arrowColor Black
+skinparam titleFontSize 20
+skinparam packageFontSize 16
+skinparam packageFontStyle bold
+
+title System Architecture
+
+'=== CLIENT LAYER ==='
+node ClientNode
+
+'=== APPLICATION LAYER ==='
+node ApplicationNode
+
+note left of ApplicationNode
+    Composed by the bussiness logic of the system,
+    it is responsible for processing the requests
+    from the clients and interacting with the
+    infrastructure layer to fulfill those requests.
+end note
+
+'=== INFRASTRUCTURE LAYER ==='
+node LogsNode
+database RemoteDatabase
+
+ClientNode --> ApplicationNode : sends requests to >
+
+ApplicationNode --> RemoteDatabase : queries >
+ApplicationNode --> RemoteDatabase : registers >
+ApplicationNode -> LogsNode : logs events to >
+
+
+@enduml

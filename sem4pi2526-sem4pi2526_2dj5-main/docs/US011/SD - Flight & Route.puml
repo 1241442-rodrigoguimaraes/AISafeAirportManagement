@@ -1,0 +1,66 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - Flight Aggregate Root
+
+actor "Pilot" as PILOT
+participant ":RegisterFlightPlanUI" as UI
+participant ":RegisterFlightPlanController" as CTRL
+participant "RouteRepository" as RR
+participant "AircraftRepository" as AR
+participant "FlightPlanRepository" as FPR
+participant "routeRepository\n:RouteRepository" as RR
+participant "aircraftRepository\n:AircraftRepository" as AR
+participant "flightPlanRepository\n:FlightPlanRepository" as FPR
+participant "FlightPlan\n:FlightPlan" as FP
+
+activate PILOT
+
+PILOT -> UI : requests to create a flight plan
+activate UI
+UI -> CTRL : getRoutesFromCompany(pilotCompany)
+activate CTRL
+deactivate RR
+CTRL -> RR : getRoutesFromCompany(pilotCompany)
+activate RR
+RR --> CTRL : routesFromCompany
+deactivate RR
+CTRL --> UI : routesFromCompany
+deactivate CTRL
+UI --> PILOT : shows the list of the pilot's company routes in the system
+PILOT -> UI : selects a route
+
+UI -> CTRL : getAircraftsFromCompany(pilotCompany)
+activate CTRL
+CTRL -> AR : getAircraftsFromCompany(pilotCompany)
+activate AR
+AR --> CTRL : aircraftsFromCompany
+deactivate AR
+CTRL --> UI : aircraftsFromCompany
+deactivate CTRL
+UI --> PILOT : shows the list of the pilot's company existent aircrafts in the system
+PILOT -> UI : selects an aircraft
+
+UI --> PILOT : asks for a departure date and time
+PILOT -> UI : types a departure date and time
+
+UI --> PILOT : asks for the necessary fuel quantity for the flight
+PILOT -> UI : types a fuel quantity
+
+UI -> CTRL : createFlightPlan(pilotName, aircraft, departureDateTime, fuelQuantity)
+activate CTRL
+CTRL -> FPR : addFlightPlan(pilotName, aircraft, departureDateTime, fuelQuantity)
+activate FPR
+FPR -> FP** : FlightPlan(pilotName, aircraft, departureDateTime, fuelQuantity)
+activate FP
+FP --> FPR : flightPlan
+deactivate FP
+FPR --> CTRL : true
+deactivate FPR
+CTRL --> UI : true
+deactivate CTRL
+UI --> PILOT : shows the flight plan
+deactivate UI
+
+@enduml

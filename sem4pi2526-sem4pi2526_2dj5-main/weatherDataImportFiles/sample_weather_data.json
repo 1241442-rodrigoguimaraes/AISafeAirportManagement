@@ -1,0 +1,26 @@
+[
+  {
+    "airControlAreaCode": "ACA-0001",
+    "date": "2026-05-20",
+    "windDirection": 180,
+    "windSpeed": 12.5
+  },
+  {
+    "airControlAreaCode": "ACA-0002",
+    "date": "2026-05-20",
+    "windDirection": 90,
+    "windSpeed": 8.0
+  },
+  {
+    "airControlAreaCode": "ACA-0001",
+    "date": "2026-05-21",
+    "windDirection": 45,
+    "windSpeed": 15.3
+  },
+  {
+    "airControlAreaCode": "ACA-0002",
+    "date": "2026-05-21",
+    "windDirection": 670,
+    "windSpeed": 10.0
+  }
+]

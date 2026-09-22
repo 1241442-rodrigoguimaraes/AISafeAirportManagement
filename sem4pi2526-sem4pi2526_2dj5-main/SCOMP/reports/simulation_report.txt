@@ -1,0 +1,92 @@
+# Final Simulation Report
+
+Generated at: Sat Jun 13 17:16:20 2026
+Total flights: 8
+Total safety violations: 3
+Validation result: FAIL
+
+## Flight Execution Statuses
+
+Flight QF143 (id: 232782548)
+- PID: 2207
+- Status: COMPLETED
+- Stored positions: 6
+- Last position: Lat=-37.008100, Lon=174.791700, Alt=7.00
+
+Flight AA004 (id: 213626907)
+- PID: 2208
+- Status: TERMINATED_SAFETY
+- Stored positions: 1
+- Last position: Lat=33.941600, Lon=-118.408500, Alt=38.00
+
+Flight PT33D (id: 232101907)
+- PID: 2209
+- Status: TERMINATED_SAFETY
+- Stored positions: 1
+- Last position: Lat=41.242100, Lon=-8.678500, Alt=69.00
+
+Flight PT99P (id: 232108651)
+- PID: 2210
+- Status: TERMINATED_SAFETY
+- Stored positions: 1
+- Last position: Lat=33.941600, Lon=-118.408500, Alt=38.00
+
+Flight PT22B (id: 232100783)
+- PID: 2211
+- Status: TERMINATED_SAFETY
+- Stored positions: 1
+- Last position: Lat=38.781300, Lon=-9.135900, Alt=114.00
+
+Flight EK312 (id: 218733259)
+- PID: 2212
+- Status: COMPLETED
+- Stored positions: 6
+- Last position: Lat=35.549400, Lon=139.779800, Alt=11.00
+
+Flight TP123 (id: 236699615)
+- PID: 2213
+- Status: TERMINATED_SAFETY
+- Stored positions: 1
+- Last position: Lat=41.262891, Lon=-8.685220, Alt=69.00
+
+Flight TP123 (id: 236699615)
+- PID: 2214
+- Status: TERMINATED_SAFETY
+- Stored positions: 1
+- Last position: Lat=38.774200, Lon=-9.134200, Alt=114.00
+
+## Safety Violation Events
+
+Event 1
+- Simulation timestamp: T+0 s (step 0)
+- Type: Critical collision
+- Flights: AA004 (id: 213626907) and PT99P (id: 232108651)
+- Horizontal distance: 0.00 m
+- Vertical distance: 0.00 m
+- Flight A position: Lat=33.941600, Lon=-118.408500, Alt=38.00
+- Flight B position: Lat=33.941600, Lon=-118.408500, Alt=38.00
+- Flight A velocity vector: dLat/s=0.00000000, dLon/s=0.00000000, dAlt/s=0.00
+- Flight B velocity vector: dLat/s=0.00000000, dLon/s=0.00000000, dAlt/s=0.00
+
+Event 2
+- Simulation timestamp: T+0 s (step 0)
+- Type: Proximity
+- Flights: PT33D (id: 232101907) and TP123 (id: 236699615)
+- Horizontal distance: 2381.81 m
+- Vertical distance: 0.00 m
+- Flight A position: Lat=41.242100, Lon=-8.678500, Alt=69.00
+- Flight B position: Lat=41.262891, Lon=-8.685220, Alt=69.00
+- Flight A velocity vector: dLat/s=0.00000000, dLon/s=0.00000000, dAlt/s=0.00
+- Flight B velocity vector: dLat/s=0.00000000, dLon/s=0.00000000, dAlt/s=0.00
+
+Event 3
+- Simulation timestamp: T+0 s (step 0)
+- Type: Proximity
+- Flights: PT22B (id: 232100783) and TP123 (id: 236699615)
+- Horizontal distance: 804.02 m
+- Vertical distance: 0.00 m
+- Flight A position: Lat=38.781300, Lon=-9.135900, Alt=114.00
+- Flight B position: Lat=38.774200, Lon=-9.134200, Alt=114.00
+- Flight A velocity vector: dLat/s=0.00000000, dLon/s=0.00000000, dAlt/s=0.00
+- Flight B velocity vector: dLat/s=0.00000000, dLon/s=0.00000000, dAlt/s=0.00
+

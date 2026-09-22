@@ -1,0 +1,80 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US061 - Add a Customer's Collaborator
+
+actor "Backoffice\nOperator" as BO
+participant ":AddCollaboratorUI" as UI
+participant ":AddCollaboratorController" as CTRL
+participant "airTransportCompanyRepository\n:AirTransportCompanyRepository" as ATCR
+participant "airControlAreaRepository\n:AirControlAreaRepository" as ACAR
+participant "userManagementService\n:UserManagementService" as UMS
+participant "collaboratorRepository\n:CollaboratorRepository" as CR
+participant "collaborator\n:Collaborator" as COLLAB
+
+activate BO
+
+BO -> UI : requests to add a collaborator
+activate UI
+
+UI -> CTRL : getCustomerTypes()
+activate CTRL
+CTRL --> UI : [AIR_TRANSPORT_COMPANY, AIR_CONTROL_AREA]
+deactivate CTRL
+UI --> BO : shows customer types
+
+BO -> UI : selects customer type (e.g. AIR_TRANSPORT_COMPANY)
+
+UI -> CTRL : getCustomers(customerType)
+activate CTRL
+
+alt customerType == AIR_TRANSPORT_COMPANY
+    CTRL -> ATCR : findAll()
+    activate ATCR
+    ATCR --> CTRL : airTransportCompanies
+    deactivate ATCR
+else customerType == AIR_CONTROL_AREA
+    CTRL -> ACAR : findAll()
+    activate ACAR
+    ACAR --> CTRL : airControlAreas
+    deactivate ACAR
+end
+
+CTRL --> UI : customers
+deactivate CTRL
+UI --> BO : shows available customers
+
+BO -> UI : selects a customer
+UI --> BO : asks for collaborator details\n(name, email, phone number)
+BO -> UI : enters collaborator details
+
+UI -> CTRL : addCollaborator(customerType, customerId,\nname, email, phoneNumber)
+activate CTRL
+
+CTRL -> UMS : existsByUsername(email)
+activate UMS
+UMS --> CTRL : false
+deactivate UMS
+
+CTRL -> UMS : registerNewUser(name, email, role)
+activate UMS
+UMS --> CTRL : systemUser
+deactivate UMS
+
+CTRL -> CR : save(customerType, customerId, systemUser)
+activate CR
+CR -> COLLAB ** : Collaborator(customer, systemUser)
+activate COLLAB
+COLLAB --> CR : collaborator
+deactivate COLLAB
+CR --> CTRL : collaborator
+deactivate CR
+
+CTRL --> UI : collaborator
+deactivate CTRL
+
+UI --> BO : shows collaborator registration details
+deactivate UI
+
+@enduml

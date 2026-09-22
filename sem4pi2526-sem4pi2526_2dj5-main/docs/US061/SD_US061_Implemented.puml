@@ -1,0 +1,124 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US061 - Add a Customer's Collaborator (Implemented)
+
+actor "Backoffice\nOperator" as BO
+participant ":AddCollaboratorUI" as UI
+participant ":AddCollaboratorController" as CTRL
+participant ":AuthorizationService" as AUTH
+participant "airControlAreaRepository\n:AirControlAreaRepository" as ACAR
+participant "airCompanyRepository\n:AirCompanyRepository" as ACR
+participant ":UserManagementService" as UMS
+participant ":CollaboratorFCOBuilder" as FCOB
+participant ":CollaboratorATCCBuilder" as ATCCB
+participant "collaboratorRepositoryFCO\n:CollaboratorRepositoryFCO" as FCR
+participant "collaboratorRepositoryATCC\n:CollaboratorRepositoryATCC" as ACRR
+
+activate BO
+
+BO -> UI : requests to add a collaborator
+activate UI
+
+UI -> CTRL : getAirControlAreas()
+activate CTRL
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(BACKOFFICE_OPERATOR, ADMIN)
+activate AUTH
+AUTH --> CTRL : ok
+deactivate AUTH
+CTRL -> ACAR : findAll()
+activate ACAR
+ACAR --> CTRL : airControlAreas
+deactivate ACAR
+CTRL --> UI : airControlAreas
+deactivate CTRL
+
+UI -> CTRL : getAirTransportCompanies()
+activate CTRL
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(BACKOFFICE_OPERATOR, ADMIN)
+activate AUTH
+AUTH --> CTRL : ok
+deactivate AUTH
+CTRL -> ACR : findAll()
+activate ACR
+ACR --> CTRL : airTransportCompanies
+deactivate ACR
+CTRL --> UI : airTransportCompanies
+deactivate CTRL
+
+UI --> BO : shows available customers\n(air control areas and\nair transport companies)
+
+BO -> UI : selects customer type,\ncustomer, and enters\n(name, email, phone, password)
+
+alt Customer is AirControlArea
+    UI -> CTRL : addCollaboratorFCO(area, name,\nemail, phone, password)
+    activate CTRL
+
+    CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(BACKOFFICE_OPERATOR, ADMIN)
+    activate AUTH
+    AUTH --> CTRL : ok
+    deactivate AUTH
+
+    CTRL -> UMS : registerNewUser(email, password,\nfirstName, lastName,\nemail, [FCO])
+    activate UMS
+    UMS --> CTRL : systemUser
+    deactivate UMS
+
+    CTRL -> FCOB ** : new CollaboratorFCOBuilder()
+    activate FCOB
+    FCOB -> FCOB : with(name, email, phone,\nsystemUser, area)
+    FCOB --> CTRL : builder
+    CTRL -> FCOB : build()
+    FCOB -> FCR ** : new CollaboratorFCO(...)
+    note right : validated by\nCollaboratorFCO constructor
+    FCOB --> CTRL : collaboratorFCO
+    deactivate FCOB
+
+    CTRL -> FCR : save(collaboratorFCO)
+    activate FCR
+    FCR --> CTRL : collaboratorFCO
+    deactivate FCR
+
+    CTRL --> UI : collaboratorFCO
+    deactivate CTRL
+
+else Customer is AirTransportCompany
+    UI -> CTRL : addCollaboratorATCC(name, email,\nphone, password, company)
+    activate CTRL
+
+    CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(BACKOFFICE_OPERATOR, ADMIN)
+    activate AUTH
+    AUTH --> CTRL : ok
+    deactivate AUTH
+
+    CTRL -> UMS : registerNewUser(email, password,\nfirstName, lastName,\nemail, [ATCC])
+    activate UMS
+    UMS --> CTRL : systemUser
+    deactivate UMS
+
+    CTRL -> ATCCB ** : new CollaboratorATCCBuilder()
+    activate ATCCB
+    ATCCB -> ATCCB : with(name, email, phone,\nsystemUser, company)
+    ATCCB --> CTRL : builder
+    CTRL -> ATCCB : build()
+    ATCCB -> ACRR ** : new CollaboratorATCC(...)
+    note right : validated by\nCollaboratorATCC constructor
+    ATCCB --> CTRL : collaboratorATCC
+    deactivate ATCCB
+
+    CTRL -> ACRR : save(collaboratorATCC)
+    activate ACRR
+    ACRR --> CTRL : collaboratorATCC
+    deactivate ACRR
+
+    CTRL --> UI : collaboratorATCC
+    deactivate CTRL
+end
+
+UI --> BO : shows collaborator registration details
+deactivate UI
+
+deactivate BO
+
+@enduml

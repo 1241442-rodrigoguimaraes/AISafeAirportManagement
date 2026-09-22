@@ -1,0 +1,35 @@
+========================================
+ALSAFE - SIMULATION REPORT
+========================================
+Generated at: 2026-06-14 00:29:17
+Source report: ..\SCOMP\reports\simulation_report.txt
+
+SIMULATION RESULT: FAIL
+
+FLIGHTS SUMMARY
+Total flights: 8
+- Flight QF143 (id: 232782548) - COMPLETED
+- Flight AA004 (id: 213626907) - TERMINATED_SAFETY
+- Flight PT33D (id: 232101907) - TERMINATED_SAFETY
+- Flight PT99P (id: 232108651) - TERMINATED_SAFETY
+- Flight PT22B (id: 232100783) - TERMINATED_SAFETY
+- Flight EK312 (id: 218733259) - COMPLETED
+- Flight TP123 (id: 236699615) - TERMINATED_SAFETY
+- Flight TP123 (id: 236699615) - TERMINATED_SAFETY
+
+SAFETY VIOLATIONS
+Violation #1
+- Timestamp: T+0 s (step 0)
+- Flight A: AA004 (id: 213626907) at Lat=33.941600, Lon=-118.408500, Alt=38.00
+- Flight B: PT99P (id: 232108651) at Lat=33.941600, Lon=-118.408500, Alt=38.00
+Violation #2
+- Timestamp: T+0 s (step 0)
+- Flight A: PT33D (id: 232101907) at Lat=41.242100, Lon=-8.678500, Alt=69.00
+- Flight B: TP123 (id: 236699615) at Lat=41.262891, Lon=-8.685220, Alt=69.00
+Violation #3
+- Timestamp: T+0 s (step 0)
+- Flight A: PT22B (id: 232100783) at Lat=38.781300, Lon=-9.135900, Alt=114.00
+- Flight B: TP123 (id: 236699615) at Lat=38.774200, Lon=-9.134200, Alt=114.00
+
+VALIDATION RESULT: FAIL
+========================================

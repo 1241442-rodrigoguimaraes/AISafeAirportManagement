@@ -1,0 +1,71 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US064 - Disable a Customer's Collaborator
+
+actor "Backoffice\nOperator" as BO
+participant ":DisableCollaboratorUI" as UI
+participant ":DisableCollaboratorController" as CTRL
+participant "airCompanyRepository\n:AirCompanyRepository" as ACR
+participant "airControlAreaRepository\n:AirControlAreaRepository" as ACAR
+participant "collaboratorRepositoryATCC\n:CollaboratorRepositoryATCC" as ATCCR
+participant "collaboratorRepositoryFCO\n:CollaboratorRepositoryFCO" as FCOR
+participant "userManagementService\n:UserManagementService" as UMS
+
+activate BO
+
+BO -> UI : requests to disable a collaborator
+activate UI
+
+UI -> CTRL : getAirTransportCompanies() / getAirControlAreas()
+activate CTRL
+CTRL -> ACR : findAll()
+ACR --> CTRL : companies
+CTRL -> ACAR : findAll()
+ACAR --> CTRL : areas
+CTRL --> UI : customers
+deactivate CTRL
+
+UI --> BO : shows customer type and customer list
+BO -> UI : selects customer
+
+alt Air Transport Company
+    UI -> CTRL : getActiveCollaboratorsOfCompany(company)
+    CTRL -> ATCCR : findActiveByCompany(company)
+    ATCCR --> CTRL : active ATCC collaborators
+else Air Control Area
+    UI -> CTRL : getActiveCollaboratorsOfArea(area)
+    CTRL -> FCOR : findActiveByCustomerArea(area)
+    FCOR --> CTRL : active FCO collaborators
+end
+CTRL --> UI : active collaborators
+deactivate CTRL
+
+UI --> BO : shows list of active collaborators
+BO -> UI : selects collaborator and confirms
+
+alt FCO collaborator
+    UI -> CTRL : disableCollaboratorFCO(dto)
+    activate CTRL
+    CTRL -> FCOR : findByEmail(email)
+    FCOR --> CTRL : collaborator
+    CTRL -> UMS : deactivateUser(systemUser)
+    UMS --> CTRL : ok
+    CTRL --> UI : true / false
+    deactivate CTRL
+else ATCC collaborator
+    UI -> CTRL : disableCollaboratorATCC(dto)
+    activate CTRL
+    CTRL -> ATCCR : findByEmail(email)
+    ATCCR --> CTRL : collaborator
+    CTRL -> UMS : deactivateUser(systemUser)
+    UMS --> CTRL : ok
+    CTRL --> UI : true / false
+    deactivate CTRL
+end
+
+UI --> BO : shows success or error message
+deactivate UI
+
+@enduml

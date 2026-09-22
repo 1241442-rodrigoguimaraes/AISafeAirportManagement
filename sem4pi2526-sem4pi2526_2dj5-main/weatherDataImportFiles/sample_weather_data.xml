@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<weatherDataRecords>
+    <record>
+        <airControlAreaCode>ACA-0001</airControlAreaCode>
+        <date>2026-05-20</date>
+        <windDirection>180</windDirection>
+        <windSpeed>12.5</windSpeed>
+    </record>
+    <record>
+        <airControlAreaCode>ACA-0002</airControlAreaCode>
+        <date>2026-05-20</date>
+        <windDirection>90</windDirection>
+        <windSpeed>8.0</windSpeed>
+    </record>
+    <record>
+        <airControlAreaCode>ACA-0001</airControlAreaCode>
+        <date>2026-05-21</date>
+        <windDirection>45</windDirection>
+        <windSpeed>15.3</windSpeed>
+    </record>
+    <record>
+        <airControlAreaCode>ACA-0002</airControlAreaCode>
+        <date>2026-05-21</date>
+        <windDirection>270</windDirection>
+        <windSpeed>10.0</windSpeed>
+    </record>
+</weatherDataRecords>

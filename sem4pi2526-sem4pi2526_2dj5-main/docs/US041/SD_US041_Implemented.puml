@@ -1,0 +1,70 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US041 - Register Weather Data (Implemented)
+
+actor "Weather\nPerson" as WP
+participant ":RegisterWeatherDataUI" as UI
+participant ":RegisterWeatherDataController" as CTRL
+participant ":AuthorizationService" as AUTH
+participant "airControlAreaRepository\n:AirControlAreaRepository" as ACAR
+participant ":WeatherDataBuilder" as BUILDER
+participant "weatherDataRepository\n:WeatherDataRepository" as WDR
+
+activate WP
+
+WP -> UI : requests to register weather data
+activate UI
+
+UI -> CTRL : getAirControlAreas()
+activate CTRL
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(WEATHER_PERSON, ADMIN)
+activate AUTH
+AUTH --> CTRL : ok
+deactivate AUTH
+CTRL -> ACAR : findAll()
+activate ACAR
+ACAR --> CTRL : airControlAreas
+deactivate ACAR
+CTRL --> UI : airControlAreas
+deactivate CTRL
+UI --> WP : shows available air control areas
+
+WP -> UI : selects an air control area
+UI --> WP : asks for weather details\n(date, wind direction, wind speed)
+WP -> UI : enters weather details
+
+UI -> CTRL : registerWeatherData(area, date,\nwindDirection, windSpeed)
+activate CTRL
+
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(WEATHER_PERSON)
+activate AUTH
+AUTH --> CTRL : ok
+deactivate AUTH
+
+CTRL -> BUILDER ** : new WeatherDataBuilder()
+activate BUILDER
+
+BUILDER -> BUILDER : with(area, date,\nwindDirection, windSpeed)
+note right : creates WindCondition\nand WeatherDate internally
+
+BUILDER --> CTRL : builder
+CTRL -> BUILDER : build()
+BUILDER --> CTRL : weatherData
+deactivate BUILDER
+
+CTRL -> WDR : save(weatherData)
+activate WDR
+WDR --> CTRL : weatherData
+deactivate WDR
+
+CTRL --> UI : weatherData
+deactivate CTRL
+
+UI --> WP : shows weather data registration details
+deactivate UI
+
+deactivate WP
+
+@enduml

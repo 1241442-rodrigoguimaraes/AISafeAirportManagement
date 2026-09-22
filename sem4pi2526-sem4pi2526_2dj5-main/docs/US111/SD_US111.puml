@@ -1,0 +1,56 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US111 - Generate a Simulation Report
+
+actor "Flight Control\nOperator" as FCO
+participant ":GenerateSimulationReportUI" as UI
+participant ":GenerateSimulationReportController" as CTRL
+participant ":AuthorizationService" as AUTH
+participant ":GenerateSimulationReportService" as SERVICE
+participant ":SimulationReportParser" as PARSER
+participant ":SimulationReportWriter" as WRITER
+database "SCOMP/reports" as REPORTS
+
+FCO -> UI : requests simulation report
+activate UI
+
+UI -> CTRL : generateReport()
+activate CTRL
+
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(FLIGHT_CONTROL_OPERATOR)
+activate AUTH
+AUTH --> CTRL : ok
+deactivate AUTH
+
+CTRL -> SERVICE : generateReport()
+activate SERVICE
+
+SERVICE -> REPORTS : locate simulation_report.txt
+REPORTS --> SERVICE : source path
+
+SERVICE -> PARSER : parse(source path)
+activate PARSER
+PARSER -> REPORTS : read simulation_report.txt
+REPORTS --> PARSER : raw SCOMP report
+PARSER --> SERVICE : SimulationReport
+deactivate PARSER
+
+SERVICE -> WRITER : write(report, reports folder, clock)
+activate WRITER
+WRITER -> REPORTS : create simulation_report_yyyyMMdd_HHmmss.txt
+REPORTS --> WRITER : generated path
+WRITER --> SERVICE : generated path
+deactivate WRITER
+
+SERVICE --> CTRL : generated path
+deactivate SERVICE
+
+CTRL --> UI : generated path
+deactivate CTRL
+
+UI --> FCO : shows success message with path
+deactivate UI
+
+@enduml

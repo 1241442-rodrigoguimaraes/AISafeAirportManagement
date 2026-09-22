@@ -1,0 +1,74 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US052 - Create an Airport
+
+actor "Backoffice\nOperator" as BO
+participant ":CreateAirportUI" as UI
+participant ":CreateAirportController" as CTRL
+participant "airControlAreaRepository\n:AirControlAreaRepository" as ACAR
+participant "airportRepository\n:AirportRepository" as AR
+participant "coordinates\n:Coordinates" as COORDS
+participant "airport\n:Airport" as AIRPORT
+
+activate BO
+
+BO -> UI : requests to register a new airport
+activate UI
+
+UI -> CTRL : getAirControlAreas()
+activate CTRL
+CTRL -> ACAR : findAll()
+activate ACAR
+ACAR --> CTRL : airControlAreas
+deactivate ACAR
+CTRL --> UI : airControlAreas
+deactivate CTRL
+UI --> BO : shows available air control areas
+
+BO -> UI : selects an air control area
+
+UI --> BO : asks for airport details\n(name, town, country, IATA, ICAO,\nlatitude, longitude, elevation)
+BO -> UI : enters airport details
+
+UI -> CTRL : createAirport(areaCode, name, town, country,\niataCode, icaoCode, latitude, longitude, elevation)
+activate CTRL
+
+CTRL -> ACAR : findByCode(areaCode)
+activate ACAR
+ACAR --> CTRL : airControlArea
+deactivate ACAR
+
+CTRL -> AR : existsByIataCode(iataCode)
+activate AR
+AR --> CTRL : false
+deactivate AR
+
+CTRL -> AR : existsByIcaoCode(icaoCode)
+activate AR
+AR --> CTRL : false
+deactivate AR
+
+CTRL -> COORDS ** : Coordinates(latitude, longitude)
+activate COORDS
+
+COORDS --> CTRL : coordinates
+deactivate COORDS
+
+CTRL -> AR : save(airControlArea, name, town, country,\niataCode, icaoCode, coordinates, elevation)
+activate AR
+AR -> AIRPORT ** : Airport(airControlArea, name, town, country,\niataCode, icaoCode, coordinates, elevation)
+activate AIRPORT
+AIRPORT --> AR : airport
+deactivate AIRPORT
+AR --> CTRL : airport
+deactivate AR
+
+CTRL --> UI : airport
+deactivate CTRL
+
+UI --> BO : shows airport registration details
+deactivate UI
+
+@enduml

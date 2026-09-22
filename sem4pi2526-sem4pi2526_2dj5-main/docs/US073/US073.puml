@@ -1,0 +1,127 @@
+@startuml
+
+skinparam monochrome true
+skinparam packageStyle rect
+skinparam defaultFontName "Verdana"
+skinparam shadowing false
+
+title Sequence Diagram - US073 (Create a Flight Route)
+
+actor "Air Transport\nCompany Collaborator" as ATCC
+participant ":CreateFlightRouteUI" as UI <<Presentation>>
+participant ":CreateFlightRouteController" as CTRL <<Application>>
+participant "airportRepository\n:AirportRepository" as AR <<Repository>>
+participant "authz\n:AuthorizationService" as AS <<Service>>
+participant "atccRepository\n:CollaboratorRepositoryATCC" as CAR <<Repository>>
+participant "atcc\n:CollaboratorATCC" as COL <<Entity>>
+participant "flightRouteRepository\n:FlightRouteRepository" as FRR <<Repository>>
+participant "flightRouteBuilder\n:FlightRouteBuilder" as FRB <<Builder>>
+participant "flightRouteName\n:FlightRouteName" as FRN <<VO>>
+participant "flightRoute\n:FlightRoute" as FR <<Entity>>
+
+autonumber
+
+activate ATCC
+
+ATCC -> UI : requests to create a flight route
+activate UI
+UI -> CTRL : getAllAirportsList()
+activate CTRL
+CTRL -> AR : getAllAirports()
+activate AR
+AR --> CTRL : allAirports
+deactivate AR
+CTRL --> UI : allAirportsStrings()
+deactivate CTRL
+note right of CTRL : The list "allAirports" get from the repository\nwill be transformed in a String list with all the\nairports names. The same will happen with\nthe companies.
+UI --> ATCC : asks for the starting airport
+ATCC -> UI : chooses the starting airport
+UI --> ATCC : asks for the destination airport
+ATCC -> UI : chooses the destination airport
+
+UI -> CTRL : createFlightRoute(routeNumbers,\nstartingAirport, destinationAirport)
+activate CTRL
+CTRL -> AS : ensureAuthenticatedUserHasAnyOf(Roles.AIR_TRANSPORT_COMPANY_COLLABORATOR)
+activate AS
+AS --> CTRL : no exception thrown
+deactivate AS
+CTRL -> AS : session().authenticatedUser()
+activate AS
+AS --> CTRL : user
+deactivate AS
+CTRL -> CAR : findBySystemUser(user)
+activate CAR
+CAR --> CTRL : atcc
+deactivate CAR
+CTRL -> COL : getAtcc()
+activate COL
+COL --> CTRL : company
+deactivate COL
+
+CTRL -> CTRL : getCompanyInitials(companyName)
+activate CTRL
+CTRL --> CTRL : companyInitials
+deactivate CTRL
+CTRL -> CTRL : checkName(name)
+activate CTRL
+CTRL -> FRR : findByName(name)
+activate FRR
+FRR --> CTRL : empty Optional object
+deactivate FRR
+CTRL --> CTRL : no exception thrown
+deactivate CTRL
+
+CTRL -> AR : findByName(startingAirport)
+activate AR
+AR --> CTRL : start
+deactivate AR
+CTRL -> AR : findByName(destinationAirport)
+activate AR
+AR --> CTRL : end
+deactivate AR
+
+CTRL -> FRB : with(startingAirport, destinationAirport, airCompany, routeName)
+activate FRB
+FRB -> FRB : withStartingAirport(startingAirport)
+activate FRB
+FRB --> FRB : routeBuilder
+deactivate FRB
+
+FRB -> FRB : withDestinationAirport(destinationAirport)
+activate FRB
+FRB --> FRB : routeBuilder
+deactivate FRB
+FRB -> FRB : withAirCompany(airCompany)
+activate FRB
+FRB --> FRB : routeBuilder
+deactivate FRB
+
+FRB -> FRB : withRouteName(routeName)
+activate FRB
+FRB -> FRN** : new FlightRouteName(routeName)
+activate FRN
+FRN --> FRB : flightRouteName
+deactivate FRN
+FRB --> FRB : routeBuilder
+deactivate FRB
+FRB --> CTRL : routeBuilder
+deactivate FRB
+CTRL -> FRB : build()
+activate FRB
+FRB -> FR** : new FlightRoute(startingAirport, destinationAirport,\nairCompany, flightRouteName)
+activate FR
+FR --> FRB : flightRoute
+deactivate FR
+FRB --> CTRL : flightRoute
+deactivate FRB
+
+CTRL -> FRR : save(flightRoute)
+activate FRR
+FRR --> CTRL : flightRoute
+deactivate FRR
+CTRL --> UI : flightRoute
+deactivate CTRL
+UI --> ATCC : displays a success message and\nshow the data of the route created
+deactivate UI
+
+@enduml

@@ -1,0 +1,117 @@
+@startuml
+skinparam monochrome true
+skinparam packageStyle rect
+skinparam defaultFontName "Verdana"
+skinparam shadowing false
+
+title Sequence Diagram - US031 (Register Backoffice Users)
+
+actor Administrator as ADM
+participant ":AddUserUI" as UI <<Presentation>>
+participant ":AddUserController" as CTRL <<Application>>
+participant ":Roles" as RS <<Domain>>
+participant "authz\n:AuthorizationService" as AS <<Service>>
+participant "userSvc\n:UserManagementService" as US <<Service>>
+participant "sysUsBuilder\n:SystemUserBuilder" as SUB <<Builder>>
+participant "SystemUser" as SU <<Domain>>
+participant "userRepository\n:UserRepository" as UR <<Repository>>
+participant "alSafeUserRepository\n:AlSafeUserRepository" as ASUR <<Repository>>
+participant ":UserBuilderHelper" as UBH <<Factory>>
+participant "alSafeUserBuilder\n:AlSafeUserBuilder" as ASUB <<Builder>>
+participant "alSafeUser\n:AlSafeUser" as ASU <<Domain>>
+
+autonumber
+
+activate ADM
+
+ADM -> UI : asks for register a backoffice user
+activate UI
+UI -> CTRL : getRoleTypes()
+activate CTRL
+CTRL -> RS : nonUserValues()
+activate RS
+RS --> CTRL : roles
+deactivate RS
+CTRL --> UI : roles
+deactivate CTRL
+UI --> ADM : asks for data (username, password, firstName, lastName,\n email, phoneNumber) and shows the existent roles
+ADM -> UI : provides data and chooses a role
+        
+UI -> CTRL : addUser(username, password, firstName, lastName, email, phoneNumber, roles)
+activate CTRL
+CTRL -> CTRL : addUser(username, password, firstName, lastName, email, phoneNumber, roles, CurrentTimeCalendars.now())
+activate CTRL
+CTRL -> AS : ensureAuthenticatedUserHasAnyOf(Roles.BACKOFFICE_OPERATOR, Roles.ADMIN)
+activate AS
+AS --> CTRL : no exception thrown
+deactivate AS
+CTRL -> CTRL : validateEmail(email)
+activate CTRL
+CTRL --> CTRL : no exception thrown
+deactivate CTRL
+
+CTRL -> US : registerNewUser(username, password, firstName, lastName, email, roles, now)
+activate US
+US -> SUB** : new SystemUserBuilder()
+activate SUB
+SUB --> US : systemUserBuilder
+deactivate
+US -> SUB : with(username, rawPassword, firstName, lastName, email).createdOn(createdOn).withRoles(roles)
+activate SUB
+SUB --> US : systemUserBuilder
+deactivate SUB
+US -> SUB : build()
+activate SUB
+SUB -> SU** : new SystemUser(username, password, name, email, roles, createdOn)
+activate SU
+SU --> SUB : newUser
+deactivate SU
+SUB --> US : newUser
+deactivate SUB
+US -> UR : save(newUser)
+activate UR
+UR --> US : newUser
+deactivate UR
+US --> CTRL : newUser
+deactivate US
+
+CTRL -> ASUR : findBySystemUser(newUser)
+activate ASUR
+ASUR --> CTRL : Optional.empty()
+deactivate ASUR
+
+CTRL -> UBH : alSafeUserBuilder()
+activate UBH
+UBH -> ASUB** : new AlSafeUserBuilder()
+activate ASUB
+ASUB --> UBH : alSafeUserBuilder
+deactivate ASUB
+UBH --> CTRL : alSafeUserBuilder
+deactivate UBH
+
+CTRL -> ASUB : with(newUser, phoneNumber, now)
+activate ASUB
+ASUB --> CTRL : alSafeUserBuilder
+deactivate ASUB
+
+CTRL -> ASUB : build()
+activate ASUB
+ASUB -> ASU** : new AlSafeUser(newUser, phoneNumber, securityClearance, skillsAssessment)
+activate ASU
+ASU --> ASUB : alSafeUser
+deactivate ASU
+ASUB --> CTRL : alSafeUser
+deactivate ASUB
+
+CTRL -> ASUR : save(alSafeUser)
+activate ASUR
+ASUR --> CTRL : alSafeUser
+deactivate ASUR
+CTRL --> CTRL : alSafeUser
+deactivate CTRL
+CTRL --> UI : alSafeUser
+deactivate CTRL
+UI --> ADM : alSafeUser
+deactivate UI
+
+@enduml

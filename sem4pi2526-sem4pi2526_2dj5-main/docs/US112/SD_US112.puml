@@ -1,0 +1,64 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US112 - Monthly Statistics Report Generation
+
+actor "Flight Control\nOperator" as FCO
+participant ":GenerateMonthlyReportUI" as UI
+participant ":GenerateMonthlyReportController" as CTRL
+participant ":AuthorizationService" as AUTH
+participant "generator\n:ReportGenerator" as GENERATOR
+participant ":MonthlySimulationReportParser" as PARSER
+participant ":MonthlyStatisticsReportWriter" as WRITER
+database "SCOMP/reports" as REPORTS
+
+FCO -> UI : selects month and year
+activate UI
+
+UI -> CTRL : generateMonthlyReport(period)
+activate CTRL
+
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(FLIGHT_CONTROL_OPERATOR)
+activate AUTH
+AUTH --> CTRL : ok
+deactivate AUTH
+
+CTRL -> GENERATOR : generate(period)
+activate GENERATOR
+
+GENERATOR -> REPORTS : list simulation_report_yyyyMMdd_HHmmss.txt
+REPORTS --> GENERATOR : candidate files
+
+loop each file in selected month
+    GENERATOR -> PARSER : parse(file)
+    activate PARSER
+    PARSER -> REPORTS : read file
+    REPORTS --> PARSER : US111 report text
+    alt valid file
+        PARSER --> GENERATOR : SimulationReportSnapshot
+    else malformed file
+        PARSER --> GENERATOR : error
+        GENERATOR -> GENERATOR : store warning and continue
+    end
+    deactivate PARSER
+end
+
+GENERATOR -> GENERATOR : aggregate MonthlyStatistics
+GENERATOR -> WRITER : write(monthlyReport, outputDir)
+activate WRITER
+WRITER -> REPORTS : create monthly_statistics_report_yyyy_MM.txt
+REPORTS --> WRITER : generated path
+WRITER --> GENERATOR : generated path
+deactivate WRITER
+
+GENERATOR --> CTRL : generated path
+deactivate GENERATOR
+
+CTRL --> UI : generated path
+deactivate CTRL
+
+UI --> FCO : shows generated report path
+deactivate UI
+
+@enduml

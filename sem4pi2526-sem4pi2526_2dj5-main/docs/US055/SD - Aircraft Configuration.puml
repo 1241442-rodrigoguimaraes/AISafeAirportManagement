@@ -1,0 +1,63 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - Create Aircraft Model
+
+actor "Backoffice\nOperator" as BO
+participant ":CreateAircraftModelUI" as UI
+participant ":CreateAircraftModelController" as CTRL
+participant "makerRepository\n:MakersRepository" as MKR
+participant "engineModelRepository\n:EngineModelRepository" as EMR
+participant "aircraftModelRepository\n:AircraftModelRepository" as AMR
+participant "aircraftModel\n:aircraftModel" as AM
+
+activate BO
+
+BO -> UI : requests to create an aircraft model
+activate UI
+
+UI -> CTRL : makers()
+activate CTRL
+CTRL -> MKR : findAll()
+activate MKR
+MKR --> CTRL : makers
+deactivate MKR
+CTRL --> UI : makers
+deactivate CTRL
+
+UI -> CTRL : engineModels()
+activate CTRL
+CTRL -> EMR : findAll()
+activate EMR
+EMR --> CTRL : engineModels
+deactivate EMR
+CTRL --> UI : engineModels
+deactivate CTRL
+
+UI --> BO : asks for model name, maker, type,\nmaximum range, physics data and certified engines
+BO -> UI : enters data
+
+UI -> CTRL : registerAircraftModel(modelName, maker, type,\nmaximumRange, physicsDataValues, certifiedEngines)
+activate CTRL
+
+CTRL -> AMR : ofIdentity(aircraftModelId)
+activate AMR
+AMR --> CTRL : not found
+deactivate AMR
+
+CTRL -> AM ++ : new(modelName, maker, type,\nmaximumRange, physicsData, certifiedEngines)
+AM --> CTRL : aircraftModel
+
+CTRL -> AMR : save(aircraftModel)
+activate AMR
+AMR --> CTRL : savedAircraftModel
+deactivate AMR
+
+CTRL --> UI : success
+deactivate CTRL
+
+UI --> BO : shows success message
+deactivate UI
+
+@enduml

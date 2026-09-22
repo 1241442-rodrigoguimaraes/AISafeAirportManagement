@@ -1,0 +1,43 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - Bootstrap Aircraft Model
+
+participant ":AircraftModelBootstrapper" as BT
+participant "makerRepository\n:MakersRepository" as MKR
+participant "engineModelRepository\n:EngineModelRepository" as EMR
+participant "aircraftModelRepository\n:AircraftModelRepository" as AMR
+participant "aircraftModel\n:aircraftModel" as AM
+
+activate BT
+
+BT -> MKR : ofIdentity(makerName)
+activate MKR
+MKR --> BT : maker
+deactivate MKR
+
+BT -> EMR : ofIdentity(engineModelId)
+activate EMR
+EMR --> BT : engineModel
+deactivate EMR
+
+BT -> AMR : ofIdentity(aircraftModelId)
+activate AMR
+AMR --> BT : not found
+deactivate AMR
+
+BT -> AM ++ : new(modelName, maker,\naircraftType, maximumRange,\nphysicsData, certifiedEngines)
+
+activate AM
+AM --> BT : aircraftModel
+deactivate AM
+
+BT -> AMR : save(aircraftModel)
+activate AMR
+AMR --> BT : savedAircraftModel
+deactivate AMR
+
+deactivate BT
+
+@enduml

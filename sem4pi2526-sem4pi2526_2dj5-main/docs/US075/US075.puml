@@ -1,0 +1,139 @@
+@startuml
+
+skinparam monochrome true
+skinparam packageStyle rect
+skinparam defaultFontName "Verdana"
+skinparam shadowing false
+
+title Sequence Diagram - US075 (Add a Pilot)
+
+actor "Air Transport Company\nCollaborator" as ATCC
+participant ":AddPilotUI" as UI <<Presentation>>
+participant ":AddPilotController" as CTRL <<Application>>
+participant "authz\n:AuthorizationService" as AS <<Service>>
+participant "userSvc\n:UserManagementService" as USVC <<Service>>
+participant "collaboratorRepository\n:CollaboratorRepositoryATCC" as CR <<Repository>>
+participant "aircraftModelRepository\n:AircraftModelRepository" as AMR <<Repository>>
+participant "pilotRepository\n:PilotRepository" as PR <<Repository>>
+participant "pilotBuilder\n:PilotBuilder" as PB <<Builder>>
+participant "systemUser\n:SystemUser" as SU <<Aggregate Root>>
+participant "pilot\n:Pilot" as P <<Aggregate Root>>
+
+autonumber
+
+activate ATCC
+
+note right of ATCC
+  The ATCC already exists and is
+  authenticated before starting this use case.
+end note
+
+ATCC -> UI : requests to add a pilot
+activate UI
+
+UI -> CTRL : aircraftModels()
+activate CTRL
+
+CTRL -> AS : ensureAuthenticatedUserHasAnyOf(Roles.AIR_TRANSPORT_COMPANY_COLLABORATOR)
+activate AS
+AS --> CTRL : no exception thrown
+deactivate AS
+
+CTRL -> AMR : findAll()
+activate AMR
+AMR --> CTRL : aircraftModels
+deactivate AMR
+
+CTRL --> UI : aircraftModels
+deactivate CTRL
+
+UI --> ATCC : asks for pilot name
+ATCC -> UI : enters name
+
+UI --> ATCC : asks for pilot email
+ATCC -> UI : enters email
+
+UI --> ATCC : asks for pilot phone
+ATCC -> UI : enters phone
+
+UI --> ATCC : asks for temporary password
+ATCC -> UI : enters password
+
+UI --> ATCC : shows aircraft models
+ATCC -> UI : selects one or more aircraft models
+
+UI -> CTRL : addPilot(name, email, phone, password, selectedModels)
+activate CTRL
+
+CTRL -> AS : ensureAuthenticatedUserHasAnyOf(Roles.AIR_TRANSPORT_COMPANY_COLLABORATOR)
+activate AS
+AS --> CTRL : no exception thrown
+deactivate AS
+
+CTRL -> PR : findByEmail(email)
+activate PR
+PR --> CTRL : empty Optional object
+deactivate PR
+
+CTRL -> AS : session()
+activate AS
+AS --> CTRL : authenticated session
+deactivate AS
+
+CTRL -> CR : findBySystemUser(authenticatedUser)
+activate CR
+CR --> CTRL : existing collaboratorATCC
+deactivate CR
+
+note right of CR
+  No ATCC is created here.
+  The repository only retrieves the
+  existing collaborator profile linked
+  to the authenticated user.
+end note
+
+CTRL -> CR : findCompanyByCollaborator(existing collaboratorATCC)
+activate CR
+CR --> CTRL : airTransportCompany
+deactivate CR
+
+note right of CTRL
+  The pilot is automatically assigned
+  to the authenticated ATCC's company.
+end note
+
+CTRL -> USVC : registerNewUser(email, password, firstName, lastName, email, Roles.PILOT)
+activate USVC
+USVC -> SU** : create system user for the new pilot
+activate SU
+SU --> USVC : systemUser
+deactivate SU
+USVC --> CTRL : systemUser
+deactivate USVC
+
+CTRL -> PB : with(name, email, phone, systemUser, airTransportCompany, selectedModels)
+activate PB
+PB --> CTRL : pilotBuilder
+deactivate PB
+
+CTRL -> PB : build()
+activate PB
+PB -> P** : new Pilot(name, email, phone, systemUser, airTransportCompany, selectedModels)
+activate P
+P --> PB : pilot
+deactivate P
+PB --> CTRL : pilot
+deactivate PB
+
+CTRL -> PR : save(pilot)
+activate PR
+PR --> CTRL : pilot
+deactivate PR
+
+CTRL --> UI : pilot
+deactivate CTRL
+
+UI --> ATCC : displays success message and pilot data
+deactivate UI
+
+@enduml

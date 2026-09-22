@@ -1,0 +1,92 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US032 - Activate / Deactivate Backoffice Users
+
+actor "Backoffice Operator\nor Administrator" as BO
+participant ":DeactivateUserUI\nor :ActivateUserUI" as UI
+participant ":DeactivateUserController\nor :ActivateUserController" as CTRL
+participant ":AuthorizationService" as AUTH
+participant ":UserManagementService" as UMS
+participant "systemUser\n:SystemUser" as SU
+
+activate BO
+
+== Deactivate a activated user ==
+
+BO -> UI : opens Deactivate User
+activate UI
+
+UI -> CTRL : activeUsers()
+activate CTRL
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(BACKOFFICE_OPERATOR, ADMIN)
+AUTH --> CTRL : ok
+CTRL -> UMS : activeUsers()
+activate UMS
+UMS --> CTRL : activeSystemUsers
+deactivate UMS
+CTRL --> UI : activeSystemUsers
+deactivate CTRL
+
+UI --> BO : numbered list (username, name)
+BO -> UI : selects user number
+
+UI -> CTRL : deactivateUser(selectedSystemUser)
+activate CTRL
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(BACKOFFICE_OPERATOR, ADMIN)
+AUTH --> CTRL : ok
+CTRL -> UMS : deactivateUser(selectedSystemUser)
+activate UMS
+UMS -> SU : deactivate (framework)
+activate SU
+SU --> UMS : updatedUser
+deactivate SU
+UMS --> CTRL : updatedUser
+deactivate UMS
+CTRL --> UI : updatedUser
+deactivate CTRL
+
+UI --> BO : operation completed (or persistence error message)
+deactivate UI
+
+== Activate a deactivated user ==
+
+BO -> UI : opens Activate User
+activate UI
+
+UI -> CTRL : deactivatedUsers()
+activate CTRL
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(BACKOFFICE_OPERATOR, ADMIN)
+AUTH --> CTRL : ok
+CTRL -> UMS : deactivatedUsers()
+activate UMS
+UMS --> CTRL : deactivatedSystemUsers
+deactivate UMS
+CTRL --> UI : deactivatedSystemUsers
+deactivate CTRL
+
+UI --> BO : numbered list (username, name)
+BO -> UI : selects user number
+
+UI -> CTRL : activateUser(selectedSystemUser)
+activate CTRL
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(BACKOFFICE_OPERATOR, ADMIN)
+AUTH --> CTRL : ok
+CTRL -> UMS : activateUser(selectedSystemUser)
+activate UMS
+UMS -> SU : activate (framework)
+activate SU
+SU --> UMS : updatedUser
+deactivate SU
+UMS --> CTRL : updatedUser
+deactivate UMS
+CTRL --> UI : updatedUser
+deactivate CTRL
+
+UI --> BO : operation completed (or persistence error message)
+deactivate UI
+
+deactivate BO
+
+@enduml

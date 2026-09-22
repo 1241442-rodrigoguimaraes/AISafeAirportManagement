@@ -1,0 +1,60 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - Weather Service Aggregate Root
+
+actor "Weather Person" as WP
+participant ":RegisterWeatherDataUI" as UI
+participant ":RegisterWeatherDataController" as CTRL
+participant "flightControlAreaRepository\n:FlightControlAreaRepository" as FCAR
+participant "weatherDataRepository\n:WeatherDataRepository" as WDR
+participant "weatherData\n:WeatherData" as WD
+
+activate WP
+
+WP -> UI : requests to register weather data
+activate UI
+
+UI -> CTRL : getFlightControlAreas()
+activate CTRL
+CTRL -> FCAR : getFlightControlAreas()
+activate FCAR
+FCAR --> CTRL : flightControlAreas
+deactivate FCAR
+CTRL --> UI : flightControlAreas
+deactivate CTRL
+UI --> WP : shows available air control areas
+WP -> UI : selects an air control area
+
+UI --> WP : asks for the date
+WP -> UI : enters the date
+
+UI --> WP : asks for wind speed (m/s)
+WP -> UI : enters wind speed
+
+UI --> WP : asks for wind direction (angle relative to North)
+WP -> UI : enters wind direction
+
+UI --> WP : asks for temperature (°C)
+WP -> UI : enters temperature
+
+UI --> WP : asks for pressure (hPa)
+WP -> UI : enters pressure
+
+UI -> CTRL : registerWeatherData(flightControlArea, date, windSpeed, windDirection, temperature, pressure)
+activate CTRL
+CTRL -> WDR : registerWeatherData(flightControlArea, date, windSpeed, windDirection, temperature, pressure)
+activate WDR
+WDR -> WD** : WeatherData(flightControlArea, date, windSpeed, windDirection, temperature, pressure)
+activate WD
+WD --> WDR : weatherData
+deactivate WD
+WDR --> CTRL : true
+deactivate WDR
+CTRL --> UI : true
+deactivate CTRL
+UI --> WP : shows weather data description
+deactivate UI
+
+@enduml

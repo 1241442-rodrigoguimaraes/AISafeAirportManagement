@@ -1,0 +1,55 @@
+@startuml
+title US086 - Pilot Remote Access
+
+actor Pilot
+participant "Remote Client App" as Client
+participant "TCP Remote Server" as Server
+participant "RemoteAccessDispatcher" as Dispatcher
+participant "Authentication Handler" as AuthHandler
+participant "Pilot Request Handler" as PilotHandler
+participant "FlightPlanController" as Controller
+database "Remote RDBMS" as DB
+participant "Remote Access Logging Server" as Logger
+
+Pilot -> Client: Enter credentials
+Client -> Server: TCP Packet opCode 1\nusername;password
+Server -> Dispatcher: Dispatch authentication packet
+Dispatcher -> AuthHandler: authenticate(credentials)
+AuthHandler -> DB: Validate user credentials
+DB --> AuthHandler: User/session result
+AuthHandler --> Dispatcher: Authentication response
+Dispatcher --> Server: Success or error packet
+
+alt successful Pilot authentication
+    Server -> Server: Store authenticated connection context
+    Server -> Logger: UDP login success event\nservice=US86
+    Server --> Client: TCP success response
+else failed authentication or unauthorized role
+    Server -> Logger: UDP login failure event\nservice=US86
+    Server --> Client: TCP error response
+end
+
+Pilot -> Client: Select Pilot operation
+Client -> Server: TCP Pilot operation packet
+Server -> Server: Verify authenticated Pilot context
+Server -> Dispatcher: Dispatch Pilot packet
+Dispatcher -> PilotHandler: Execute remote operation
+PilotHandler -> Controller: Invoke Pilot use case
+Controller -> DB: Read/write data
+DB --> Controller: Result
+Controller --> PilotHandler: Use case result
+PilotHandler --> Dispatcher: Response packet
+Dispatcher --> Server: Response packet
+Server --> Client: TCP response
+Client --> Pilot: Show result
+
+Pilot -> Client: Logout
+Client -> Server: TCP Packet opCode 0
+Server -> Logger: UDP logout event\nservice=US86
+Server --> Client: TCP logout confirmation
+Server -> Server: Close connection
+
+... abrupt disconnect ...
+Server -> Logger: UDP disconnect event\nservice=US86
+
+@enduml

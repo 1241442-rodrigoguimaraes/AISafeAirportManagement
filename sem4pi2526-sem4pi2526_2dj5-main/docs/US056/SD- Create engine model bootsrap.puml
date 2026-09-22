@@ -1,0 +1,45 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - Bootstrap Engine Model
+
+participant ":EngineModelBootstrapper" as BT
+participant "makerRepository\n:MakersRepository" as MKR
+participant "engineModelRepository\n:EngineModelRepository" as EMR
+participant "engineModel\n:engineModel" as EM
+
+activate BT
+
+BT -> MKR : ofIdentity(makerName)
+activate MKR
+
+MKR --> BT : maker
+
+deactivate MKR
+
+BT -> EMR : ofIdentity(engineModelId)
+activate EMR
+
+EMR --> BT : not found
+
+deactivate EMR
+
+BT -> EM ++ : new(modelName,maker,engineType,power,fuel,efficiency)
+
+activate EM
+
+EM --> BT : engineModel
+
+deactivate EM
+
+BT -> EMR : save(engineModel)
+activate EMR
+
+EMR --> BT : savedEngineModel
+
+deactivate EMR
+
+deactivate BT
+
+@enduml

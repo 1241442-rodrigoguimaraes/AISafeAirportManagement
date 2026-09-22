@@ -1,0 +1,89 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US071 - Decommission an Aircraft
+
+actor "Air Transport Company\nCollaborator" as ATCC
+participant ":DecommissionAircraftUI" as UI
+participant ":DecommissionAircraftController" as CTRL
+participant ":AuthorizationService" as AUTH
+participant "collaboratorRepositoryATCC\n:CollaboratorRepositoryATCC" as CR
+participant "aircraftRepository\n:AircraftRepository" as AR
+participant "aircraft\n:Aircraft" as AC
+
+activate ATCC
+
+ATCC -> UI : requests to decommission an aircraft
+activate UI
+
+UI -> CTRL : activeFleetForCurrentCompany()
+activate CTRL
+
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(ATCC, ADMIN)
+AUTH --> CTRL : ok
+
+CTRL -> CR : findBySystemUser(authenticatedUser)
+activate CR
+CR --> CTRL : collaboratorATCC
+deactivate CR
+
+CTRL -> CR : findCompanyByCollaborator(collaborator)
+activate CR
+CR --> CTRL : airTransportCompany
+deactivate CR
+
+CTRL -> AR : findByCompany(company)
+activate AR
+AR --> CTRL : fleet
+deactivate AR
+
+CTRL -> CTRL : filter maintenanceStatus != DECOMMISSIONED
+CTRL --> UI : activeFleet
+deactivate CTRL
+
+alt fleet empty
+    UI --> ATCC : no aircraft available
+else fleet not empty
+    UI --> ATCC : SelectWidget — choose aircraft
+    ATCC -> UI : selected aircraft
+    UI --> ATCC : confirm decommission? (Y/N)
+    ATCC -> UI : Y
+
+    UI -> CTRL : decommissionAircraft(registrationID)
+    activate CTRL
+
+    CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(ATCC, ADMIN)
+    CTRL -> CR : findBySystemUser + findCompanyByCollaborator
+    CR --> CTRL : company
+
+    CTRL -> AR : ofIdentity(registrationID)
+    activate AR
+    AR --> CTRL : aircraft
+    deactivate AR
+
+    alt aircraft belongs to another company
+        CTRL --> UI : SecurityException
+        UI --> ATCC : Access denied
+    else same company
+        CTRL -> AC : decommission()
+        activate AC
+        note right of AC
+          sets MaintenanceStatus.DECOMMISSIONED
+        end note
+        AC --> CTRL : ok
+        deactivate AC
+        CTRL -> AR : save(aircraft)
+        activate AR
+        AR --> CTRL : updatedAircraft
+        deactivate AR
+        CTRL --> UI : updatedAircraft
+        deactivate CTRL
+        UI --> ATCC : Aircraft retired (status DECOMMISSIONED)
+    end
+end
+
+deactivate UI
+deactivate ATCC
+
+@enduml

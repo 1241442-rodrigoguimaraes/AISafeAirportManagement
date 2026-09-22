@@ -1,0 +1,47 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - List Company Fleet by Aircraft Model
+
+actor "Air Transport Company\nCollaborator" as COL
+participant ":ListFleetUI" as UI
+participant ":ListFleetController" as CTRL
+participant "aircraftModelRepository\n:AircraftModelRepository" as AMR
+participant "aircraftRepository\n:AircraftRepository" as AR
+
+activate COL
+
+COL -> UI : requests company fleet by aircraft model
+activate UI
+
+UI -> CTRL : aircraftModels()
+activate CTRL
+
+CTRL -> AMR : findAll()
+activate AMR
+AMR --> CTRL : aircraftModels
+deactivate AMR
+
+CTRL --> UI : aircraftModels
+deactivate CTRL
+
+UI --> COL : asks to choose aircraft model
+COL -> UI : selects aircraft model
+
+UI -> CTRL : fleetByModel(aircraftModel)
+activate CTRL
+
+CTRL -> AR : findByAircraftModel(aircraftModel)
+activate AR
+
+AR --> CTRL : aircraftFleet
+deactivate AR
+
+CTRL --> UI : aircraftFleet
+deactivate CTRL
+
+UI --> COL : shows aircraft fleet
+deactivate UI
+
+@enduml

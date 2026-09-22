@@ -1,0 +1,61 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - Aircraft Configuration Aggregate Root
+
+actor "Backoffice\nOperator" as BO
+participant ":AircraftModelUI" as UI
+participant ":AircraftModelController" as CTRL
+participant "engineModelRepository\n:EngineModelRepository" as EMR
+participant "aircraftModelRepository\n:AircraftModelRepository" as AMR
+participant "aircraftModel\n:AircraftModel" as AM
+
+activate BO
+
+BO -> UI : requests to create an aircraft model
+activate UI
+
+UI --> BO : asks for the aircraft model identifier
+BO -> UI : enters the aircraft model identifier
+
+UI -> CTRL : findAllModels()
+activate CTRL
+CTRL -> EMR : findAllModels()
+activate EMR
+
+EMR --> CTRL : certifiedEngineModels
+deactivate EMR
+CTRL --> UI : certifiedEngineModels
+deactivate CTRL
+
+
+
+UI --> BO : asks for the certified engine models
+BO -> UI : enters the engine model identifiers
+
+UI --> BO : aks for the restant data
+BO -> UI : specifies maker and pyshicsData
+
+UI -> CTRL : createAircraftModel(modelId, maker, physicsData, engineModelIds)
+activate CTRL
+
+
+CTRL -> AMR : createAircraftModel(modelId, maker, physicsData, certifiedEngineModels)
+activate AMR
+
+AMR -> AM ** : AircraftModel(modelId, maker, physicsData, certifiedEngineModels)
+activate AM
+AM --> AMR : aircraftModel
+deactivate AM
+
+AMR --> CTRL : aircraftModel
+deactivate AMR
+
+CTRL --> UI : aircraftModelDTO
+deactivate CTRL
+
+UI --> BO : shows the aircraft model description
+deactivate UI
+
+@enduml

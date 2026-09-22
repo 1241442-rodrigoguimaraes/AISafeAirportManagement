@@ -1,0 +1,56 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - Air Infrastructure Aggregate Root
+
+actor "Backoffice Operator" as USER
+participant ":CreateAirportUI" as UI
+participant ":CreateAirportController" as CTRL
+participant "flightControlAreaRepository\n:FlightControlAreaRepository" as FCAR
+participant "airportRepository\n:AirportRepository" as AR
+participant "airport\n:Airport" as AIRP
+
+activate USER
+
+USER -> UI : requests to create an airport
+activate UI
+
+UI -> CTRL : getFlightControlAreas()
+activate CTRL
+CTRL -> FCAR : getFlightControlAreas()
+activate FCAR
+FCAR --> CTRL : flightControlAreas
+deactivate FCAR
+CTRL --> UI : flightControlAreas
+deactivate CTRL
+UI --> USER : shows available air control areas
+USER -> UI : selects an air control area
+
+UI --> USER : asks for airport name
+USER -> UI : enters airport name
+
+UI --> USER : asks for data IATA and ICAO codes
+USER -> UI : enters IATA and ICAO codes
+
+UI --> USER : asks for Location (town, country, coordinates)
+USER -> UI : enters location data
+
+UI --> USER : asks for elevation (m above sea level)
+USER -> UI : enters location
+
+UI -> CTRL : addAirport(flightControlArea, name, iataCode, icaoCode, location, elevation)
+activate CTRL
+CTRL -> AR : addAirport(flightControlArea, name, iataCode, icaoCode, location, elevation)
+activate AR
+AR -> AIRP : Airport(flightControlArea, name, iataCode, icaoCode, location, elevation)
+activate AIRP
+AIRP --> AR : airport
+deactivate AIRP
+AR --> CTRL : true
+deactivate AR
+CTRL --> UI : true
+deactivate CTRL
+UI --> USER : shows airport description
+
+@enduml

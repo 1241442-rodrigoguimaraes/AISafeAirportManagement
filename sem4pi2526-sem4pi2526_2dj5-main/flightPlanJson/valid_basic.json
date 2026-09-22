@@ -1,0 +1,33 @@
+[ {
+  "flightId" : "TP123",
+  "type" : "regular",
+  "route" : "TP123",
+  "date" : "2025-05-01",
+  "time" : "09:00",
+  "aircraft" : "CS-TUA",
+  "legs" : [ {
+    "departure" : "OPO",
+    "arrival" : "MAD",
+    "fuel" : {
+      "quantity" : 4200.0,
+      "unit" : "kg"
+    },
+    "segments" : [ {
+      "mode" : "climb",
+      "start" : {
+        "latitude" : 41.262891,
+        "longitude" : -8.68522,
+        "altitudeMeters" : 69.0
+      },
+      "end" : {
+        "latitude" : 42.0,
+        "longitude" : -8.01,
+        "altitudeMeters" : 9249.0
+      },
+      "altitudeSlots" : [ 3000.0, 6000.0, 9000.0 ],
+      "widthMeters" : 50.0,
+      "windDirectionDeg" : 270.0,
+      "windSpeedMs" : 15.0
+    } ]
+  } ]
+} ]

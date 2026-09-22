@@ -1,0 +1,128 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US091 - Remote Accesses Logging Visualization
+
+actor "Administrator" as ADMIN
+participant "Remote Client\n(US44/US78/US86)" as CLIENT
+participant ":RemoteServer\n(TCP)" as RS
+participant ":ClientHandler" as CH
+participant ":RemoteAccessesLoggingServer" as LOGSRV
+participant "accessLogStore\n:AccessLogStore" as STORE
+participant ":LoggingVisualizationUI\n(Web Browser)" as UI
+participant ":HttpStatusServer" as HTTP
+participant ":LoggingVisualizationController" as CTRL
+
+== US090 - Event ingestion (prerequisite) ==
+
+CLIENT -> RS : TCP connect + remote request
+activate RS
+RS -> CH : handle client connection
+activate CH
+
+alt successful login
+    CH -> LOGSRV : UDP datagram\n(timestamp, username, IP, port, service, LOGIN_SUCCESS)
+else failed login
+    CH -> LOGSRV : UDP datagram\n(timestamp, username, IP, port, service, LOGIN_FAILURE)
+end
+
+activate LOGSRV
+LOGSRV -> STORE : registerEvent(event)
+activate STORE
+STORE --> LOGSRV : ok
+deactivate STORE
+deactivate LOGSRV
+
+opt logout or disconnect
+    CH -> LOGSRV : UDP datagram\n(..., LOGOUT/DISCONNECT)
+    activate LOGSRV
+    LOGSRV -> STORE : registerEvent(event)\n/update active session
+    activate STORE
+    STORE --> LOGSRV : ok
+    deactivate STORE
+    deactivate LOGSRV
+end
+
+deactivate CH
+deactivate RS
+
+== US091 - View last recorded events ==
+
+ADMIN -> UI : opens Last Events page
+activate UI
+
+UI -> HTTP : GET /events
+activate HTTP
+HTTP -> CTRL : getLastEvents()
+activate CTRL
+CTRL -> STORE : getLastEvents()
+activate STORE
+STORE --> CTRL : lastEventsList
+deactivate STORE
+CTRL --> HTTP : lastEventsList
+deactivate CTRL
+HTTP --> UI : HTML page (lastEventsList)
+deactivate HTTP
+
+UI --> ADMIN : events page with last recorded events
+
+loop AJAX polling (every N seconds)
+    UI -> HTTP : GET /api/events
+    activate HTTP
+    HTTP -> CTRL : getLastEvents()
+    activate CTRL
+    CTRL -> STORE : getLastEvents()
+    activate STORE
+    STORE --> CTRL : lastEventsList (JSON)
+    deactivate STORE
+    CTRL --> HTTP : lastEventsList (JSON)
+    deactivate CTRL
+    HTTP --> UI : 200 OK (JSON)
+    deactivate HTTP
+    UI --> ADMIN : updates events table (no page reload)
+end
+
+deactivate UI
+
+== US091 - View currently active users ==
+
+ADMIN -> UI : opens Active Users page
+activate UI
+
+UI -> HTTP : GET /active-users
+activate HTTP
+HTTP -> CTRL : getActiveUsers()
+activate CTRL
+CTRL -> STORE : getActiveUsers()
+activate STORE
+STORE --> CTRL : activeUsersList
+deactivate STORE
+CTRL --> HTTP : activeUsersList
+deactivate CTRL
+HTTP --> UI : HTML page (activeUsersList)
+deactivate HTTP
+
+UI --> ADMIN : active users page with currently active users
+
+loop AJAX polling (every N seconds)
+    UI -> HTTP : GET /api/active-users
+    activate HTTP
+    HTTP -> CTRL : getActiveUsers()
+    activate CTRL
+    CTRL -> STORE : getActiveUsers()
+    activate STORE
+    STORE --> CTRL : activeUsersList (JSON)
+    deactivate STORE
+    CTRL --> HTTP : activeUsersList (JSON)
+    deactivate CTRL
+    HTTP --> UI : 200 OK (JSON)
+    deactivate HTTP
+    UI --> ADMIN : updates active users table (no page reload)
+end
+
+deactivate UI
+
+deactivate ADMIN
+
+@enduml

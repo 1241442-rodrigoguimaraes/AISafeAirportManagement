@@ -1,0 +1,45 @@
+@startuml
+
+skinparam monochrome true
+skinparam packageStyle rect
+skinparam defaultFontName "Verdana"
+skinparam shadowing false
+
+title Sequence Diagram - US078 (Air Transport Company Collaborator remote access)
+
+participant "Collaborator\n(Remote Node)" as CC <<Node>>
+participant "Application\n(Central Node)" as APP <<Node>>
+database "Database" as DB <<Database>>
+participant "Logging Server" as LS <<Node>>
+
+autonumber
+
+== Authentication & Authorization ==
+
+activate CC
+activate APP
+
+CC -> APP : sends a TCP Packet to authenticate in the system\n(OpCode = [AUTH], Length, Credentials)
+APP -> DB : validate the user credentials (query)
+activate DB
+DB --> APP : user validated
+deactivate DB
+APP -> LS : sends a UDP Datagram\n(OpCode = "LOGIN_SUCCESS"; IP: Port; Collaborator)
+APP --> CC : sends a TCP Packet with the validation of the authentication\n(OpCode = [AUTH_ACK], Length = 0)
+
+== User Stories Request ==
+
+CC -> APP : sends a TCP Packet for the user story request\n(OpCode = [REQUEST], Length)
+APP -> DB : queries the user story associated data
+activate DB
+DB --> APP : returns the user story associated data
+deactivate DB
+
+== Returned Data Fragmentation ==
+
+APP -> APP : divides the returned data in blocks
+APP -> CC : sends a TCP Packet with the first block of data\n(OpCode = [DATA], Length, Data Block 1)
+APP -> CC : sends a TCP Packet with the second block of data\n(OpCode = [DATA], Length, Data Block 2)
+APP -> CC : sends the last TCP Packet for the end of data transmission\n(OpCode = 255, Length)
+
+@enduml

@@ -1,0 +1,58 @@
+@startuml
+
+title Sequence Diagram - User Aggregate Root
+
+actor "Admin" as ADM
+participant ":CreateUserUI" as UI
+participant ":CreateUserController" as CTRL
+participant "RoleRepository" as RR
+participant "EmailRepository" as ER
+participant "UserRepository" as UR
+participant "user\n:User" as US
+
+activate ADM
+
+ADM -> UI : requests to create user
+activate UI
+UI --> ADM : asks for a username
+ADM -> UI : types a username
+
+UI --> ADM : asks for a phone number
+ADM -> UI : enters a phone number
+
+UI -> CTRL : getValidEmails()
+activate CTRL
+CTRL -> ER : getValidEmails()
+activate ER
+ER --> CTRL : validEmails
+deactivate ER
+CTRL --> UI : validEmails
+deactivate CTRL
+UI --> ADM : shows a list of valid email domains
+ADM -> UI : selects a email domain
+UI -> CTRL : getRoles()
+activate CTRL
+CTRL -> RR : getRoles()
+activate RR
+RR --> CTRL : roles
+deactivate RR
+CTRL --> UI : roles
+deactivate CTRL
+UI --> ADM : asks to select a role
+ADM -> UI : selects a role
+
+UI -> CTRL : createUser(name, email, phoneNumber, role, isActive, false)
+activate CTRL
+CTRL -> UR : createUser(name, email, phoneNumber, role, isActive, false)
+activate UR
+UR -> US** : createUser(name, email, phoneNumber, role, isActive, false)
+activate US
+US --> UR : user
+deactivate US
+UR --> CTRL : true
+deactivate UR
+CTRL --> UI: true
+deactivate CTRL
+UI --> ADM : shows the user description
+deactivate UI
+@enduml

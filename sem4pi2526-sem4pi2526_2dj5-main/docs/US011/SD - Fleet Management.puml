@@ -1,0 +1,57 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - Fleet Management Aggregate Root
+
+actor "Air Transport Company\nCollaborator" as COLLAB
+participant ":AddAircraftUI" as UI
+participant ":AddAircraftController" as CTRL
+participant "aircraftModelRepository\n:AircraftModelRepository" as AMR
+participant "aircraftRepository\n:AircraftRepository" as AR
+participant "aircraft\n:Aircraft" as AIRC
+
+activate COLLAB
+
+COLLAB -> UI : requests to add an aircraft to the fleet
+activate UI
+
+UI -> CTRL : getAircraftModels()
+activate CTRL
+CTRL -> AMR : getAircraftModels()
+activate AMR
+AMR --> CTRL : aircraftModels
+deactivate AMR
+CTRL --> UI : aircraftModels
+deactivate CTRL
+UI --> COLLAB : shows the list of available aircraft models
+COLLAB -> UI : selects an aircraft model
+
+UI --> COLLAB : asks for the aircraft registration number
+COLLAB -> UI : enters a registration number
+
+UI --> COLLAB : asks for the registration country
+COLLAB -> UI : enters the registration country
+
+UI --> COLLAB : asks for the cabin configuration (number of seats per class)
+COLLAB -> UI : enters the cabin configuration
+
+UI --> COLLAB : asks for the number of crew elements
+COLLAB -> UI : enters the number of crew elements
+
+UI -> CTRL : addAircraft(aircraftModel, registrationID, registrationCountry, cabinConfiguration, crewElements)
+activate CTRL
+CTRL -> AR : addAircraft(aircraftModel, registrationID, registrationCountry, cabinConfiguration, crewElements)
+activate AR
+AR -> AIRC** : Aircraft(aircraftModel, registrationID, registrationCountry, cabinConfiguration, crewElements)
+activate AIRC
+AIRC --> AR : aircraft
+deactivate AIRC
+AR --> CTRL : true
+deactivate AR
+CTRL --> UI : true
+deactivate CTRL
+UI --> COLLAB : shows the aircraft description
+deactivate UI
+
+@enduml

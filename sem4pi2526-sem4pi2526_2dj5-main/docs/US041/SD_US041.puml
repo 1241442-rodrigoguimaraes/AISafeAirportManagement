@@ -1,0 +1,69 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US041 - Register Weather Data
+
+actor "Weather\nPerson" as WP
+participant ":RegisterWeatherDataUI" as UI
+participant ":RegisterWeatherDataController" as CTRL
+participant "airControlAreaRepository\n:AirControlAreaRepository" as ACAR
+participant "windCondition\n:WindCondition" as WIND
+participant "weatherDate\n:WeatherDate" as WDATE
+participant "weatherDataRepository\n:WeatherDataRepository" as WDR
+participant "weatherData\n:WeatherData" as WD
+
+activate WP
+
+WP -> UI : requests to register weather data
+activate UI
+
+UI -> CTRL : getAirControlAreas()
+activate CTRL
+CTRL -> ACAR : findAll()
+activate ACAR
+ACAR --> CTRL : airControlAreas
+deactivate ACAR
+CTRL --> UI : airControlAreas
+deactivate CTRL
+UI --> WP : shows available air control areas
+
+WP -> UI : selects an air control area
+
+UI --> WP : asks for weather details\n(date, wind direction, wind speed)
+WP -> UI : enters weather details
+
+UI -> CTRL : registerWeatherData(areaCode, date,\nwindDirection, windSpeed)
+activate CTRL
+
+CTRL -> ACAR : findByCode(areaCode)
+activate ACAR
+ACAR --> CTRL : airControlArea
+deactivate ACAR
+
+CTRL -> WIND ** : WindCondition(windDirection, windSpeed)
+activate WIND
+WIND --> CTRL : windCondition
+deactivate WIND
+
+CTRL -> WDATE ** : WeatherDate(date)
+activate WDATE
+WDATE --> CTRL : weatherDate
+deactivate WDATE
+
+CTRL -> WDR : save(airControlArea, weatherDate, windCondition)
+activate WDR
+WDR -> WD ** : WeatherData(airControlArea, weatherDate, windCondition)
+activate WD
+WD --> WDR : weatherData
+deactivate WD
+WDR --> CTRL : weatherData
+deactivate WDR
+
+CTRL --> UI : weatherData
+deactivate CTRL
+
+UI --> WP : shows weather data registration details
+deactivate UI
+
+@enduml

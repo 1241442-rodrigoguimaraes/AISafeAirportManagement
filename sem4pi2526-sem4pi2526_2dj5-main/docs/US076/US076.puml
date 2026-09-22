@@ -1,0 +1,119 @@
+@startuml
+
+skinparam monochrome true
+skinparam packageStyle rect
+skinparam defaultFontName "Verdana"
+skinparam shadowing false
+
+title Sequence Diagram - US076 (List Pilot Roster)
+
+actor "Air Transport Company\nCollaborator" as ATCC
+participant ":ListPilotRosterUI" as UI <<Presentation>>
+participant ":ListPilotRosterController" as CTRL <<Application>>
+participant "authz\n:AuthorizationService" as AS <<Service>>
+participant "collaboratorRepository\n:CollaboratorRepositoryATCC" as CR <<Repository>>
+participant "pilotRepository\n:PilotRepository" as PR <<Repository>>
+participant "pilot\n:Pilot" as P <<Aggregate Root>>
+participant "pilotDTO\n:PilotDTO" as DTO <<DTO>>
+
+autonumber
+
+activate ATCC
+
+note right of ATCC
+  The ATCC already exists and is
+  authenticated before starting this use case.
+end note
+
+ATCC -> UI : requests to list pilot roster
+activate UI
+
+UI -> CTRL : activePilotRoster()
+activate CTRL
+
+CTRL -> AS : ensureAuthenticatedUserHasAnyOf(Roles.AIR_TRANSPORT_COMPANY_COLLABORATOR)
+activate AS
+AS --> CTRL : no exception thrown
+deactivate AS
+
+CTRL -> AS : session()
+activate AS
+AS --> CTRL : authenticated session
+deactivate AS
+
+CTRL -> CR : findBySystemUser(authenticatedUser)
+activate CR
+CR --> CTRL : existing collaboratorATCC
+deactivate CR
+
+note right of CR
+  No ATCC is created here.
+  The repository only retrieves the
+  existing collaborator profile linked
+  to the authenticated user.
+end note
+
+CTRL -> CR : findCompanyByCollaborator(existing collaboratorATCC)
+activate CR
+CR --> CTRL : airTransportCompany
+deactivate CR
+
+note right of CTRL
+  The roster is scoped to the
+  authenticated ATCC's company.
+end note
+
+CTRL -> PR : findActiveByCompany(airTransportCompany)
+activate PR
+PR --> CTRL : active pilots from company
+deactivate PR
+
+alt active pilots found
+    loop for each pilot
+        CTRL -> P : name()
+        activate P
+        P --> CTRL : name
+        deactivate P
+
+        CTRL -> P : email()
+        activate P
+        P --> CTRL : email
+        deactivate P
+
+        CTRL -> P : phoneNumber()
+        activate P
+        P --> CTRL : phone
+        deactivate P
+
+        CTRL -> P : company()
+        activate P
+        P --> CTRL : airTransportCompany
+        deactivate P
+
+        CTRL -> P : isActive()
+        activate P
+        P --> CTRL : active status
+        deactivate P
+
+        CTRL -> P : certifiedAircraftModels()
+        activate P
+        P --> CTRL : certified models
+        deactivate P
+
+        CTRL -> DTO** : new PilotDTO(name, email, phone, company, status, certifiedModels)
+        activate DTO
+        DTO --> CTRL : pilotDTO
+        deactivate DTO
+    end
+
+    CTRL --> UI : pilot roster DTOs
+    deactivate CTRL
+
+    UI --> ATCC : displays pilot roster
+
+end
+
+deactivate UI
+deactivate ATCC
+
+@enduml

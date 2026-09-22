@@ -1,0 +1,82 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - Remove Engine Model from Aircraft Model
+
+actor "Backoffice\nOperator" as BO
+participant ":AircraftModelUI" as UI
+participant ":RemoveEngineModel" as CTRL
+participant "aircraftModelRepository\n:AircraftModelRepository" as AMR
+participant "engineModelRepository\n:EngineModelRepository" as EMR
+participant "aircraftRepository\n:AircraftRepository" as AR
+participant "aircraftModel\n:AircraftModel" as AM
+
+activate BO
+
+BO -> UI : requests to remove an engine model from an aircraft model
+activate UI
+
+UI -> CTRL : getAircraftModels()
+activate CTRL
+CTRL -> AMR : findAll()
+activate AMR
+AMR --> CTRL : aircraftModels
+deactivate AMR
+CTRL --> UI : aircraftModels
+deactivate CTRL
+
+UI --> BO : asks to select an aircraft model
+BO -> UI : selects aircraft model
+
+UI -> CTRL : getCertifiedEngineModels(aircraftModelId)
+activate CTRL
+CTRL -> AMR : ofIdentity(aircraftModelId)
+activate AMR
+AMR --> CTRL : aircraftModel
+deactivate AMR
+CTRL --> UI : certifiedEngineModels
+deactivate CTRL
+
+UI --> BO : asks to select the engine model to remove
+BO -> UI : selects engine model
+
+UI -> CTRL : removeEngineModel(aircraftModelId, engineModelId)
+activate CTRL
+
+CTRL -> AMR : ofIdentity(aircraftModelId)
+activate AMR
+AMR --> CTRL : aircraftModel
+deactivate AMR
+
+CTRL -> EMR : ofIdentity(engineModelId)
+activate EMR
+EMR --> CTRL : engineModel
+deactivate EMR
+
+CTRL -> AR : existsByAircraftModel(aircraftModel)
+activate AR
+AR --> CTRL : false
+deactivate AR
+
+CTRL -> AM : canRemoveCertifiedEngineModel(engineModel)
+activate AM
+AM --> CTRL : true
+deactivate AM
+
+CTRL -> AM : removeCertifiedEngineModel(engineModel)
+activate AM
+AM --> CTRL : aircraftModel
+deactivate AM
+
+CTRL -> AMR : save(aircraftModel)
+activate AMR
+AMR --> CTRL : savedAircraftModel
+deactivate AMR
+
+CTRL --> UI : success
+deactivate CTRL
+
+UI --> BO : shows the updated aircraft model
+
+@enduml

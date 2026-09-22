@@ -1,0 +1,64 @@
+@startuml
+
+skinparam monochrome true
+skinparam packageStyle rect
+skinparam defaultFontName "Verdana"
+skinparam shadowing false
+
+title Sequence Diagram - US057 (Add Engine Model to an Aircraft Model)
+
+actor "Backoffice\nOperator" as BOP
+participant ":AddCertifiedEngineUI" as UI <<Presentation>>
+participant ":AddCertifiedEngineController" as CTRL <<Application>>
+participant "amRepository\n:AircraftModelRepository" as AMR <<Repository>>
+participant "emRepository\n:EngineModelRepository" as EMR <<Repository>>
+participant "authz\n:AuthorizationService" as AS <<Service>>
+participant "aircraftModel\n:AircraftModel" as AM <<Domain>>
+
+autonumber
+
+activate BOP
+
+BOP -> UI : requests to add an engine model to an existent aircraft model
+activate UI
+UI --> CTRL : getAllAircraftModels()
+activate CTRL
+CTRL -> AMR : findAll()
+activate AMR
+AMR --> CTRL : allAircraftModels
+deactivate AMR
+CTRL --> UI : allAircraftModels
+deactivate CTRL
+UI --> BOP : shows the list of aircraft models
+BOP -> UI : selects an aircraft model
+
+UI -> CTRL : getCompatibleEngineModels(aicraftModel)
+activate CTRL
+CTRL -> EMR : findByMotorization(motorizationType)
+activate EMR
+EMR --> CTRL : compatibleEngineModels
+deactivate EMR
+CTRL --> UI : compatibleAndNotIncludedEngineModels
+deactivate CTRL
+UI --> BOP : shows the list of compatible engine models to add
+BOP -> UI : selects an engine model of the list
+
+UI -> CTRL : addCertifiedEngine(aircraftModel, engineModel)
+activate CTRL
+CTRL -> AS : ensureAuthenticatedUserHasAnyOf(Roles.BACKOFFICE_OPERATOR)
+activate AS
+AS --> CTRL : no exception thrown
+deactivate AS
+CTRL -> AM : addCertifiedEngine(engineModel)
+activate AM
+AM -> CTRL : updatedAircraftModel
+deactivate AM
+CTRL -> AMR : save(updatedAircraftModel)
+activate AMR
+AMR --> CTRL : updatedAircraftModel
+deactivate
+deactivate CTRL
+UI --> BOP : displays a success message
+deactivate UI
+
+@enduml

@@ -1,0 +1,69 @@
+@startuml
+title Sequence Diagram - US121 - Validate Flight Plan Created from File
+
+actor Pilot
+participant ":ValidateFlightPlanUI" as UI
+participant ":FlightPlanController" as CTRL
+participant ":FlightPlanService" as SVC
+participant ":FlightDSLProcessor" as DSL
+participant ":FlightSemanticAnalyzerVisitor" as SEM
+participant ":FlightPlanBuilderVisitor" as BUILDER
+participant "flightPlanRepository\n:FlightPlanRepository" as REPO
+
+Pilot -> UI : selects Validate Flight Plan
+UI -> CTRL : getFlightPlans()
+CTRL -> SVC : getAllFlightPlansFromSystemUser(user)
+SVC -> REPO : findBySystemUser(user)
+REPO --> SVC : flightPlans
+SVC --> CTRL : flightPlans
+CTRL --> UI : submitted flight plans
+
+Pilot -> UI : selects submitted FlightPlan
+UI -> CTRL : validatePlan(flightPlan)
+CTRL -> SVC : validate(flightPlan)
+
+SVC -> SVC : check sufficient fuel
+SVC -> SVC : check pilot certification
+
+SVC -> DSL : process(flightPlan.content)
+DSL -> DSL : lexical + syntactic analysis
+
+alt syntax/lexical errors
+    DSL --> SVC : Result(syntaxOk=false, syntaxErrors)
+    SVC -> REPO : save(rejected flightPlan)
+    SVC --> CTRL : IllegalArgumentException(errors)
+    CTRL --> UI : validation failed
+    UI --> Pilot : meaningful error messages
+else syntax ok
+    DSL -> SEM : visit(parseTree)
+    SEM --> DSL : semantic errors
+
+    alt semantic errors
+        DSL --> SVC : Result(semanticErrors)
+        SVC -> REPO : save(rejected flightPlan)
+        SVC --> CTRL : IllegalArgumentException(errors)
+        CTRL --> UI : validation failed
+        UI --> Pilot : meaningful error messages
+    else valid DSL
+        DSL -> BUILDER : visit(parseTree)
+        BUILDER --> DSL : FlightPlanDSL
+        DSL --> SVC : Result(valid, flightPlans)
+        SVC -> SVC : compare DSL with FlightPlan
+
+        alt consistency errors
+            SVC -> REPO : save(rejected flightPlan)
+            SVC --> CTRL : IllegalArgumentException(errors)
+            CTRL --> UI : validation failed
+            UI --> Pilot : meaningful error messages
+        else consistent
+            SVC -> SVC : flightPlan.approve()
+            SVC -> REPO : save(validated flightPlan)
+            REPO --> SVC : validated flightPlan
+            SVC --> CTRL : VALIDATED
+            CTRL --> UI : VALIDATED
+            UI --> Pilot : Flight plan validated successfully
+        end
+    end
+end
+
+@enduml

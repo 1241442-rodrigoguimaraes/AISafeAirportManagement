@@ -1,0 +1,10 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Files consumed on Linux (SCOMP) must always check out with LF,
+# even on Windows, otherwise bash/make/the C parser break on \r
+*.sh text eol=lf
+Makefile text eol=lf
+*.fp text eol=lf
+*.c text eol=lf
+*.h text eol=lf

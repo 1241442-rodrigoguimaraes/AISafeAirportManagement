@@ -1,0 +1,67 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US070 - Add an Aircraft to an Air Transport Company
+
+actor "Air Transport Company\nCollaborator" as ATCC
+participant ":AddAircraftUI" as UI
+participant ":AddAircraftController" as CTRL
+participant "collaboratorRepositoryATCC\n:CollaboratorRepositoryATCC" as CR
+participant "aircraftModelRepository\n:AircraftModelRepository" as AMR
+participant "aircraftRepository\n:AircraftRepository" as AR
+participant "aircraft\n:Aircraft" as AIRC
+
+activate ATCC
+
+note over ATCC, UI
+  ATCC app: run-atcc.bat
+  (not Backoffice)
+end note
+
+ATCC -> UI : requests to add an aircraft to the fleet
+activate UI
+
+UI -> CTRL : getAircraftModels()
+activate CTRL
+CTRL -> AMR : getAircraftModels()
+activate AMR
+AMR --> CTRL : aircraftModels
+deactivate AMR
+CTRL --> UI : aircraftModels
+deactivate CTRL
+UI --> ATCC : shows the list of available aircraft models
+ATCC -> UI : selects an aircraft model
+
+UI --> ATCC : asks for registration ID, country,\ncabin configuration, crew count
+ATCC -> UI : enters data
+
+UI -> CTRL : addAircraft(model, registrationID, country,\neconomy, business, firstClass, crewCount)
+activate CTRL
+
+CTRL -> CR : findBySystemUser(authenticatedUser)
+CR --> CTRL : collaborator
+CTRL -> CR : findCompanyByCollaborator(collaborator)
+CR --> CTRL : airTransportCompany
+
+CTRL -> AR : existsByRegistrationID(registrationID)
+activate AR
+AR --> CTRL : false
+deactivate AR
+
+CTRL -> AR : addAircraft(model, registrationID, country,\ncabinConfiguration, crew, company)
+activate AR
+AR -> AIRC** : Aircraft.create(...)
+activate AIRC
+AIRC --> AR : aircraft
+deactivate AIRC
+AR --> CTRL : true
+deactivate AR
+
+CTRL --> UI : true
+deactivate CTRL
+
+UI --> ATCC : shows the aircraft registration details
+deactivate UI
+
+@enduml

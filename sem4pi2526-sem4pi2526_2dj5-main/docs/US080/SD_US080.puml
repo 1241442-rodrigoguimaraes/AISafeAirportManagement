@@ -1,0 +1,123 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US080 - Create a Flight Plan
+
+actor "Pilot" as PILOT
+participant ":CreateFlightPlanUI" as UI
+participant ":FlightPlanController" as CTRL
+participant ":AuthorizationService" as AUTH
+participant ":FlightPlanService" as SERVICE
+participant "flightRouteRepository\n:FlightRouteRepository" as FRR
+participant "aircraftRepository\n:AircraftRepository" as ACR
+participant "pilotRepository\n:PilotRepository" as PR
+participant "flightPlanRepository\n:FlightPlanRepository" as FPR
+participant ":FlightPlan" as FP
+
+activate PILOT
+
+PILOT -> UI : requests to create a flight plan
+activate UI
+
+UI -> CTRL : getRoutesForPilot(pilot.company())
+activate CTRL
+
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(PILOT)
+activate AUTH
+AUTH --> CTRL : ok
+deactivate AUTH
+
+CTRL -> SERVICE : getRoutesFromACompany(company)
+activate SERVICE
+SERVICE -> FRR : findByCompany(company)
+activate FRR
+FRR --> SERVICE : routes
+deactivate FRR
+SERVICE --> CTRL : routes
+deactivate SERVICE
+
+CTRL --> UI : routes
+deactivate CTRL
+
+UI --> PILOT : shows available flight routes
+PILOT -> UI : selects a route
+
+UI -> CTRL : getAircraftForCompany(pilot.company())
+activate CTRL
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(PILOT)
+activate AUTH
+AUTH --> CTRL : ok
+deactivate AUTH
+CTRL -> SERVICE : getAircraftsFromACompany(company)
+activate SERVICE
+SERVICE -> ACR : findByCompany(company)
+activate ACR
+ACR --> SERVICE : aircraft
+deactivate ACR
+SERVICE --> CTRL : aircraft
+deactivate SERVICE
+CTRL --> UI : aircraft
+deactivate CTRL
+
+UI --> PILOT : shows available aircraft
+PILOT -> UI : selects an aircraft
+
+UI --> PILOT : asks for flight designator,\ndeparture date/time, fuel quantity
+
+PILOT -> UI : enters flight details
+
+UI -> CTRL : createFlightPlan(designator, route, aircraft,\npilot, departureDateTime, fuelAmount, fuelUnit)
+activate CTRL
+
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(PILOT)
+activate AUTH
+AUTH --> CTRL : ok
+deactivate AUTH
+
+CTRL -> CTRL : new FlightPlanID(designator)
+note right #FFB
+  Validates format:
+  2 letters + 1-4 digits + optional letter
+end note
+
+CTRL -> CTRL : new FuelQuantity(fuelAmount, fuelUnit)
+note right #FFB
+  Validates fuelAmount > 0
+  and fuelUnit != null
+end note
+
+CTRL -> SERVICE : createFlightPlan(flightPlanID, route,\naircraft, pilot, departureDateTime,\nfuelQuantity)
+activate SERVICE
+
+SERVICE -> FP ** : FlightPlan.create(flightPlanID, route,\naircraft, pilot, departureDateTime,\nfuelQuantity)
+activate FP
+
+note right #FFB
+  Validates:
+  - pilot.company == route.company
+  - pilot.company == aircraft.company
+  - aircraft.assertOperationalForNewFlightPlans()
+  - departureDateTime is in the future
+  Sets status = DRAFT
+  weatherData = null
+end note
+
+FP --> SERVICE : flightPlan
+deactivate FP
+
+SERVICE -> FPR : save(flightPlan)
+activate FPR
+FPR --> SERVICE : flightPlan
+deactivate FPR
+
+SERVICE --> CTRL : flightPlan
+deactivate SERVICE
+
+CTRL --> UI : flightPlan
+deactivate CTRL
+
+UI --> PILOT : shows flight plan created successfully\n(ID, route, aircraft, pilot,\ndate/time, fuel, status: DRAFT)
+deactivate UI
+
+@enduml

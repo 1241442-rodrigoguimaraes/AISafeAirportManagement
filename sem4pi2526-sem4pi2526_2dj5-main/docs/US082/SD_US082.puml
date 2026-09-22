@@ -1,0 +1,114 @@
+@startuml
+
+autonumber
+
+title Sequence Diagram - US082 - Insert Weather Data in a Flight
+
+actor "Pilot" as PILOT
+participant ":InsertWeatherDataInFlightUI" as UI
+participant ":InsertWeatherDataInFlightController" as CTRL
+participant ":AuthorizationService" as AUTH
+participant "flightPlanRepository\n:FlightPlanRepository" as FPR
+participant "weatherDataRepository\n:WeatherDataRepository" as WDR
+participant ":FlightPlan" as FP
+
+activate PILOT
+
+PILOT -> UI : open Insert Weather Data in Flight Plan\n(FlightPlanMenu option 6)
+activate UI
+
+== List pilot flight plans ==
+
+UI -> CTRL : myFlightPlans()
+activate CTRL
+
+CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(PILOT)
+activate AUTH
+AUTH --> CTRL : ok
+deactivate AUTH
+
+CTRL -> AUTH : session().authenticatedUser()
+activate AUTH
+AUTH --> CTRL : systemUser
+deactivate AUTH
+
+CTRL -> FPR : findBySystemUser(systemUser)
+activate FPR
+FPR --> CTRL : pilotFlightPlans
+deactivate FPR
+
+CTRL --> UI : pilotFlightPlans
+deactivate CTRL
+
+alt no flight plans
+    UI --> PILOT : message: no flight plans available
+else flight plans exist
+    UI --> PILOT : SelectWidget — choose flight plan
+    PILOT -> UI : selects flightPlan
+
+    opt flightPlan.isTested() == true
+        UI --> PILOT : WARNING + ask continue (y/n)
+        PILOT -> UI : confirms y
+    end
+
+    == List available weather data ==
+
+    UI -> CTRL : availableWeatherData()
+    activate CTRL
+
+    CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(PILOT)
+    activate AUTH
+    AUTH --> CTRL : ok
+    deactivate AUTH
+
+    CTRL -> WDR : findAll()
+    activate WDR
+    WDR --> CTRL : weatherDataList
+    deactivate WDR
+
+    CTRL --> UI : weatherDataList
+    deactivate CTRL
+
+    alt no weather data
+        UI --> PILOT : message: no weather data available
+    else weather data exists
+        UI --> PILOT : SelectWidget — choose weather data
+        PILOT -> UI : selects weatherData
+
+        == Associate weather and persist ==
+
+        UI -> CTRL : insertWeatherData(flightPlan, weatherData)
+        activate CTRL
+
+        CTRL -> AUTH : ensureAuthenticatedUserHasAnyOf(PILOT)
+        activate AUTH
+        AUTH --> CTRL : ok
+        deactivate AUTH
+
+        CTRL -> CTRL : ensureFlightPlanBelongsToAuthenticatedPilot(flightPlan)
+
+        CTRL -> FP : insertWeatherData(weatherData)
+        activate FP
+        FP --> CTRL : ok
+        deactivate FP
+
+        CTRL -> FPR : save(flightPlan)
+        activate FPR
+        FPR --> CTRL : savedFlightPlan
+        deactivate FPR
+
+        opt flightPlan was previously tested
+            CTRL -> CTRL : System.out.println\n(test result voided warning)
+        end
+
+        CTRL --> UI : savedFlightPlan
+        deactivate CTRL
+
+        UI --> PILOT : success message
+    end
+end
+
+deactivate UI
+deactivate PILOT
+
+@enduml
